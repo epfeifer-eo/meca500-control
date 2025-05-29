@@ -13,9 +13,10 @@ direction = OutputDevice(27)
 
 direction.on()  # or .off() for other direction
 
-for _ in range(200):
-    step.on()
-    sleep(0.001)
-    step.off()
-    sleep(0.001)
-
+for delay in [0.01, 0.005, 0.002, 0.001]:
+    print(f"Running at delay: {delay}s")
+    for _ in range(50):
+        step.on()
+        sleep(delay)
+        step.off()
+        sleep(delay)
