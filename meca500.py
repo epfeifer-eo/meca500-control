@@ -5,6 +5,7 @@ Created on Thu May 22 14:03:12 2025
 @author: elija
 """
 
+import time
 
 from mecademicpy.robot import Robot
 
@@ -30,14 +31,23 @@ class Meca500:
 
         print("[Meca500] Homing robot...")
         self.robot.Home()
-        self.robot.WaitIdle(timeout=10)
+        self.robot.WaitIdle(timeout=30)
         
+    def set_joint_vel(self, deg_per_sec):
+        print(f"[Meca500] Setting joint velocity: {deg_per_sec} deg/s")
+        self.robot.SetJointVel(deg_per_sec)
+    
+    def set_cart_vel(self, mm_per_sec):
+        print(f"[Meca500] Setting Cartesian velocity: {mm_per_sec} mm/s")
+        self.robot.SetCartLinVel(mm_per_sec)
+
     def is_pose_safe(self, x, y, z, alpha=0, beta=0, gamma=0):
-        """Conservatively check if a pose is probably within reach."""
+        """Check if a pose is probably within reach."""
+        #TODO: update this
         in_bounds = (
-            150 <= x <= 275 and
-            -75 <= y <= 75 and
-            100 <= z <= 250
+            50 <= x <= 260 and
+            -150 <= y <= 150 and
+            100 <= z <= 300
         )
         return in_bounds
 
@@ -88,10 +98,127 @@ class Meca500:
                 print(f"[Meca500] ERROR: Failed to move to pose {pose} — {e}")
                 self.connected = False
                 break
+    def tap(self, distance_mm=5, pause_sec=0.1, cart_vel=30):
+        """Moves the end effector straight down and back up along Z using relative linear motion.
+    
+        Args:
+            distance_mm (float): Distance to move down and then up (in mm).
+            pause_sec (float): Time to pause at the bottom position (in seconds).
+            cart_vel (float): Cartesian velocity in mm/s (default: 50).
+        """
+        try:
+            print(f"[Meca500] Setting Cartesian velocity to {cart_vel} mm/s")
+            self.robot.SetCartLinVel(cart_vel)
+    
+            print(f"[Meca500] Moving down {distance_mm} mm")
+            self.robot.MoveLinRelWrf(0, 0, -distance_mm, 0, 0, 0)
+            self.robot.WaitIdle()
+    #TODO: add gpio on/off for stepper
+            print(f"[Meca500] Pausing for {pause_sec} seconds")
+            time.sleep(pause_sec)
+    
+            print(f"[Meca500] Moving back up {distance_mm} mm")
+            self.robot.MoveLinRelWrf(0, 0, distance_mm, 0, 0, 0)
+            self.robot.WaitIdle()
+    
+        except Exception as e:
+            print(f"[Meca500] ERROR: Tap-down failed — {e}")
+            self.reconnect()  # Optional if implemented
+    
+    def nod(self, mode="yes"):
+        """
+        Perform a cheeky nod gesture. 
+        mode="yes": nod up and down
+        mode="no": shake left and right
+        """
+        print(f"[Meca500] That is gonna be a {mode}...")
+    
+        # Move to base pose
+        self.move_joints(0, -20, 0, 0, 0, 0)
+    
+        if mode == "yes":
+            self.set_joint_vel(20)
+            self.move_joints(-45, -20, -20, 0, 25, 0)
+            self.set_joint_vel(50)
+            self.move_joints(-45, -20, -20, 0, -15, 0)
+            self.move_joints(-45, -20, -20, 0, 50, 0)
+            self.move_joints(-45, -20, -20, 0, -15, 0)
+    
+        elif mode == "no":
+            self.set_joint_vel(20)
+            self.move_joints(-45, -20, -20, 0, 35, 0)
+            self.set_joint_vel(30)
+            self.move_joints(-35, -20, -20, 0, 35, 0)
+            self.move_joints(-55, -20, -20, 0, 35, 0)
+            self.move_joints(-45, -20, -20, 0, 35, 0)
+    
+        else:
+            print(f"[Meca500] Unknown nod mode: {mode}. Use 'yes' or 'no'.")
+            return
+    
+        # Return to base
+        self.set_joint_vel(20)
+        self.move_joints(0, -20, 0, 0, 0, 0)
+        self.set_joint_vel(10)
 
+    def clean(self, pause_sec=1):
+        """Move to cleaning station"""
+        print("[Meca500] Moving to cleaning station...")
+        
+        self.set_joint_vel(20)
+        self.move_joints(45, -20, -20, 0, 35, 0)
+        #TODO: Trigger air blast
+        #TODO: add gpio on/off for stepper
+        time.sleep(pause_sec)
+        # self.robot.MoveLinRelWrf(0, 10, 0, 0, 0, 0)  # small wipe right
+        # self.robot.WaitIdle()
+        # self.robot.MoveLinRelWrf(0, -10, 0, 0, 0, 0)  # small wipe left
+        # self.robot.WaitIdle()
 
+    def grid(
+        self,
+        origin=(100, -50),
+        x_spacing=9,
+        y_spacing=9,
+        z_height=308,
+        rows=12,
+        cols=8,
+        angles=(0, 90, 0),
+        run_cleaning=True
+    ):
+        """
+        Run a grid routine: move to each point, tap, and optionally clean.
 
-
+    
+        Args:
+            origin (tuple): (x, y) starting coordinate.
+            x_spacing (int): Horizontal spacing between columns (mm).
+            y_spacing (int): Vertical spacing between rows (mm).
+            z_height (int): Constant Z height (mm).
+            rows (int): Number of rows.
+            cols (int): Number of columns.
+            angles (tuple): (alpha, beta, gamma) orientation.
+            run_cleaning (bool): Whether to call self.clean() after each tap.
+        """
+        x0, y0 = origin
+        alpha, beta, gamma = angles
+    
+        for row in range(rows):
+            y = y0 + row * y_spacing
+            x_range = range(cols) if row % 2 == 0 else range(cols - 1, -1, -1)
+    
+            for col in x_range:
+                x = x0 + col * x_spacing
+                print(f"[Meca500] Moving to grid point ({row}, {col}) at ({x}, {y}, {z_height})")
+    
+                if not self.is_pose_safe(x, y, z_height, alpha, beta, gamma):
+                    print("[Meca500] Skipping unsafe pose.")
+                    continue
+    
+                self.move_pose(x, y, z_height, alpha, beta, gamma)
+                self.tap()
+                if run_cleaning:
+                    self.clean()
 
 
     def disconnect(self):

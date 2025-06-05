@@ -15,25 +15,34 @@ def main():
     try:
         arm.connect()
         arm.activate_and_home()
-
+        arm.set_joint_vel(50)
+        arm.set_cart_vel(50)
+        # arm.nod("yes")
+        # arm.nod("no")
+        # arm.move_pose(175, -54, 150, 0, 90, 0)
         arm.move_joints(0, 0, 0, 0, 0, 0)
-        # arm.move_joints(-45, -20, -20, 0, 25, 0)
-        # arm.move_joints(-45, -20, -20, 0, -25, 0)
-        # arm.move_joints(-45, -20, -20, 0, 60, 0)
-        # arm.move_joints(-45, -20, -20, 0, -25, 0)
-        # arm.move_joints(0, 0, 0, 0, 0, 0)
-        # arm.move_pose(200, 0, 150, 180, 0, 0)
-        # arm.move_joints(0, 0, 0, 0, 0, 0)
-
-        path = [
-            (250, 0, 150, 90, 0, 0),
-            (240, 20, 150, 90, 0, 0),
-            (230, 40, 150, 90, 0, 0)
-        ]
+        # arm.set_joint_vel(5)
+        # arm.move_pose(175, -54, 126.5, 0, 90, 0)
+        # arm.tap()
+        # arm.set_joint_vel(10)
+        # arm.clean()
+        arm.grid(origin=(175,-50),z_height=126.5, run_cleaning=False)
         
-        arm.follow_path(path, linear=True)
+        # arm.move_pose(190, 0, 308, 0, 90, 0)  #Equivalent to joints = 0
+        
+        # arm.tap(distance_mm=50, pause_sec=1, cart_vel=20)
+        
+        arm.move_joints(0, 0, 0, 0, 0, 0)
 
-        arm.move_joints(0,-60,60,0,30,0)
+        # path = [
+        #     (200, 0, 130, -180, 0, 180),
+        #     (200, 0, 120, -180, 0, 180),
+        #     (200, 0, 110, -180, 0, 180)
+        # ]
+        
+        # arm.follow_path(path, linear=True)
+
+        # arm.move_joints(0,-60,60,0,30,0)
 
     finally:
         arm.disconnect()
