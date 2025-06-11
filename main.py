@@ -5,7 +5,7 @@ Created on Thu May 22 14:02:56 2025
 @author: elija
 """
 
-
+# import time
 from meca500 import Meca500
 
 
@@ -15,18 +15,19 @@ def main():
     try:
         arm.connect()
         arm.activate_and_home()
-        arm.set_joint_vel(50)
-        arm.set_cart_vel(50)
+        arm.set_joint_vel(20)
+        arm.set_cart_vel(20)
         # arm.nod("yes")
         # arm.nod("no")
         # arm.move_pose(175, -54, 150, 0, 90, 0)
         arm.move_joints(0, 0, 0, 0, 0, 0)
         # arm.set_joint_vel(5)
-        # arm.move_pose(175, -54, 126.5, 0, 90, 0)
+        # arm.move_pose(140.75, -50.25, 170, 0, 90, 0)
+        # time.sleep(1)
         # arm.tap()
         # arm.set_joint_vel(10)
         # arm.clean()
-        arm.grid(origin=(175,-50),z_height=126.5, run_cleaning=False)
+        arm.grid(origin=(143.25,-50),z_height=200, run_cleaning=False)
         
         # arm.move_pose(190, 0, 308, 0, 90, 0)  #Equivalent to joints = 0
         

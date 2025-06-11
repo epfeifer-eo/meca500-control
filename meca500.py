@@ -98,7 +98,7 @@ class Meca500:
                 print(f"[Meca500] ERROR: Failed to move to pose {pose} — {e}")
                 self.connected = False
                 break
-    def tap(self, distance_mm=5, pause_sec=0.1, cart_vel=30):
+    def tap(self, distance_mm=8, pause_sec=0.25, cart_vel=5):
         """Moves the end effector straight down and back up along Z using relative linear motion.
     
         Args:
@@ -123,7 +123,7 @@ class Meca500:
     
         except Exception as e:
             print(f"[Meca500] ERROR: Tap-down failed — {e}")
-            self.reconnect()  # Optional if implemented
+            
     
     def nod(self, mode="yes"):
         """
