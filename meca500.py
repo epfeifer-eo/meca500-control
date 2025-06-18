@@ -8,6 +8,8 @@ Created on Thu May 22 14:03:12 2025
 import time
 
 from mecademicpy.robot import Robot
+from typing import Tuple, Optional
+
 
 class Meca500:
     def __init__(self, ip_address="192.168.0.100"):
@@ -98,7 +100,7 @@ class Meca500:
                 print(f"[Meca500] ERROR: Failed to move to pose {pose} — {e}")
                 self.connected = False
                 break
-    def tap(self, distance_mm=8, pause_sec=0.25, cart_vel=5):
+    def tap(self, distance_mm=5, pause_sec=0.25, cart_vel=5):
         """Moves the end effector straight down and back up along Z using relative linear motion.
     
         Args:
@@ -220,6 +222,52 @@ class Meca500:
                 if run_cleaning:
                     self.clean()
 
+    def grid_from_references(
+        self,
+        A1: Tuple[float, float],
+        A12: Tuple[float, float],
+        H12: Tuple[float, float],
+        z_height: float = 308,
+        rows: int = 8,
+        cols: int = 12,
+        angles: Tuple[float, float, float] = (0, 90, 0),
+        run_cleaning: bool = True,
+        skip_columns: Optional[str] = None  # 'even', 'odd', or (Default)=None
+    ):
+        x0, y0 = A1                 # A1 (tuple): (x, y) coordinates of top-left well (row 0, col 0)
+        x1, y1 = A12                # A12 (tuple): (x, y) coordinates of top-right well (row 0, col 11)
+        x2, y2 = H12                # H12 (tuple): (x, y) coordinates of bottom-right well (row 7, col 11)
+        alpha, beta, gamma = angles
+    
+        row_dx = (x1 - x0) / (cols - 1)
+        row_dy = (y1 - y0) / (cols - 1)
+        col_dx = (x2 - x1) / (rows - 1)
+        col_dy = (y2 - y1) / (rows - 1)
+    
+        for row in range(rows):
+            col_range = range(cols) if row % 2 == 0 else range(cols - 1, -1, -1)
+    
+            for col in col_range:
+                if skip_columns == 'odd' and col % 2 == 0:
+                    continue
+                elif skip_columns == 'even' and col % 2 == 1:
+                    continue
+    
+                x = x0 + col * row_dx + row * col_dx
+                y = y0 + col * row_dy + row * col_dy
+    
+                print(f"[Meca500] Moving to grid point ({row}, {col}) at ({x:.2f}, {y:.2f}, {z_height})")
+    
+                if not self.is_pose_safe(x, y, z_height, alpha, beta, gamma):
+                    print("[Meca500] Skipping unsafe pose.")
+                    continue
+    
+                self.move_pose(x, y, z_height, alpha, beta, gamma)
+                self.tap()
+                if run_cleaning:
+                    self.clean()
+
+    
 
     def disconnect(self):
         if self.connected:
