@@ -4,9 +4,24 @@ Created on Thu May 22 14:03:24 2025
 
 @author: elija
 """
+
+import sys
+
+if sys.platform == 'linux':
+    from gpiozero import DigitalOutputDevice
+else:
+    # Dummy fallback classes for non-RPi environments
+    class DigitalOutputDevice:
+        def __init__(self, pin):
+            self.pin = pin
+        def on(self):
+            print(f"[Mock] GPIO {self.pin} ON")
+        def off(self):
+            print(f"[Mock] GPIO {self.pin} OFF")
+
 import time
 import threading
-from gpiozero import DigitalOutputDevice
+# from gpiozero import DigitalOutputDevice
 
 class Stepper:
     def __init__(self, pul_pin=17, dir_pin=27, step_delay=0.001):

@@ -22,20 +22,21 @@ def main():
         # arm.move_pose(175, -54, 150, 0, 90, 0)
         arm.move_joints(0, 0, 0, 0, 0, 0)
         # arm.set_joint_vel(5)
+        # arm.move_pose(140.75, -50.25, 300, 0, 90, 0)
         # arm.move_pose(140.75, -50.25, 170, 0, 90, 0)
         # time.sleep(1)
         # arm.tap()
         # arm.set_joint_vel(10)
         # arm.clean()
         # arm.grid(origin=(143.25,-50),z_height=200, run_cleaning=False)
-        arm.grid_from_references(
-            A1=(140.63, -49.80),
-            A12=(139.34, 49.34),
-            H12=(202.46, 49.77),
-            z_height=218,
-            run_cleaning=False,
-            skip_columns='even'
-        )
+        # arm.grid_from_references(
+        #     A1=(140.63, -49.80),
+        #     A12=(139.34, 49.34),
+        #     H12=(202.46, 49.77),
+        #     z_height=218,
+        #     run_cleaning=False,
+        #     skip_columns='even'
+        # )
         
         # arm.move_pose(190, 0, 308, 0, 90, 0)  #Equivalent to joints = 0
         

@@ -6,7 +6,7 @@ Created on Thu May 22 14:03:12 2025
 """
 
 import time
-
+import threading
 from mecademicpy.robot import Robot
 from typing import Tuple, Optional
 
@@ -232,7 +232,8 @@ class Meca500:
         cols: int = 12,
         angles: Tuple[float, float, float] = (0, 90, 0),
         run_cleaning: bool = True,
-        skip_columns: Optional[str] = None  # 'even', 'odd', or (Default)=None
+        skip_columns: Optional[str] = None,  # 'even', 'odd', or (Default)=None
+        safe_pose: Tuple[float, float, float, float, float, float] = (190, 0, 308, 0, 90, 0)
     ):
         x0, y0 = A1                 # A1 (tuple): (x, y) coordinates of top-left well (row 0, col 0)
         x1, y1 = A12                # A12 (tuple): (x, y) coordinates of top-right well (row 0, col 11)
@@ -266,12 +267,41 @@ class Meca500:
                 self.tap()
                 if run_cleaning:
                     self.clean()
+        print(f"[Meca500] Returning to safe pose: {safe_pose}")
+        self.move_pose(*safe_pose)
+        self.move_joints(0, 0, 0, 0, 0, 0)
 
-    
+    def abort_and_recover(self, safe_pose=(190, 0, 308, 0, 90, 0)):
+        print("[Meca500] Aborting and recovering...")
+        try:
+            self.robot.StopMotion()
+        except Exception as e:
+            print(f"[Meca500] StopMotion failed — {e}")
+
+        try:
+            self.robot.ResetError()
+        except Exception as e:
+            print(f"[Meca500] ResetError failed — {e}")
+
+        if not self.connected:
+            try:
+                self.connect()
+            except Exception as e:
+                print(f"[Meca500] Reconnect failed — {e}")
+                return
+
+        try:
+            self.robot.ActivateRobot()
+            time.sleep(0.2)
+            print(f"[Meca500] Moving to safe pose: {safe_pose}")
+            self.robot.MovePose(*safe_pose)
+            self.robot.WaitIdle(timeout=10)
+        except Exception as e:
+            print(f"[Meca500] Failed to reach safe pose — {e}")
 
     def disconnect(self):
         if self.connected:
-            print("[Meca500] Disconnecting robot...")
+            print("[Meca500] Disconnecting...")
             self.robot.Disconnect()
             self.connected = False
             print("[Meca500] Disconnected.")
