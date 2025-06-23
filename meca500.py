@@ -101,7 +101,7 @@ class Meca500:
                 print(f"[Meca500] ERROR: Failed to move to pose {pose} — {e}")
                 self.connected = False
                 break
-    def tap(self, distance_mm=8, pause_sec=0.5, cart_vel=5, ramp_time=0.5, target_speed=500):
+    def tap(self, distance_mm=8, pause_sec=0.5, cart_vel=1, ramp_time=0.25, target_speed=800):
         """Moves the end effector down and back up, spinning the stepper motor with ramp up/down."""
         try:
             print(f"[Meca500] Setting Cartesian velocity to {cart_vel} mm/s")

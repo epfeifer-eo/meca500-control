@@ -9,33 +9,41 @@ Created on Thu May 29 13:17:00 2025
 import time
 from stepper import Stepper
 
-def main():
-    motor = Stepper(pul_pin=17, dir_pin=27)
+stepper = Stepper()
+stepper.forward()
+stepper.set_acceleration(ramp_time=0.1, target_speed=1000)
+time.sleep(1)
+stepper.set_acceleration(ramp_time=0.1, target_speed=0)
+stepper.stop()
 
-    try:
-        motor.set_speed(500)  # 500 steps/sec
-        print("[Test] Moving forward for 2 seconds")
-        motor.forward()
-        time.sleep(2)
 
-        motor.stop()
-        time.sleep(1)
+# def main():
+#     motor = Stepper(pul_pin=17, dir_pin=27)
 
-        print("[Test] Moving in reverse for 2 seconds")
-        motor.reverse()
-        time.sleep(2)
+#     try:
+#         motor.set_speed(500)  # 500 steps/sec
+#         print("[Test] Moving forward for 2 seconds")
+#         motor.forward()
+#         time.sleep(2)
 
-        motor.stop()
+#         motor.stop()
+#         time.sleep(1)
 
-    except KeyboardInterrupt:
-        print("\n[Test] Interrupted by user")
+#         print("[Test] Moving in reverse for 2 seconds")
+#         motor.reverse()
+#         time.sleep(2)
 
-    finally:
-        motor.cleanup()
-        print("[Test] Done.")
+#         motor.stop()
 
-if __name__ == "__main__":
-    main()
+#     except KeyboardInterrupt:
+#         print("\n[Test] Interrupted by user")
+
+#     finally:
+#         motor.cleanup()
+#         print("[Test] Done.")
+
+# if __name__ == "__main__":
+#     main()
 
 
 
