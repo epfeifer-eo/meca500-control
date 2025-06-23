@@ -101,7 +101,7 @@ class Meca500:
                 print(f"[Meca500] ERROR: Failed to move to pose {pose} — {e}")
                 self.connected = False
                 break
-    def tap(self, distance_mm=5, pause_sec=0.25, cart_vel=5):
+    def tap(self, distance_mm=8, pause_sec=0.5, cart_vel=2):
         """Moves the end effector straight down and back up along Z using relative linear motion.
     
         Args:
@@ -116,7 +116,7 @@ class Meca500:
             print(f"[Meca500] Moving down {distance_mm} mm")
             self.robot.MoveLinRelWrf(0, 0, -distance_mm, 0, 0, 0)
             self.robot.WaitIdle()
-    #TODO: add gpio on/off for stepper
+    
             if self.stepper:
                 print("[Meca500] Activating stepper motor")
                 self.stepper.forward()
