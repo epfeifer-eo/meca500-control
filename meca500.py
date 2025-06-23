@@ -281,7 +281,7 @@ class Meca500:
         cols: int = 12,
         angles: Tuple[float, float, float] = (0, 90, 0),
         run_cleaning: bool = True,
-        skip_columns: Optional[str] = None,  # 'even', 'odd', or None
+        skip_columns: Optional[str] = None,  # 'Even', 'Odd', or None
         should_stop: Optional[threading.Event] = None,  # Optional stop flag
         return_safe_pose: Tuple[float, float, float, float, float, float] = (190, 0, 308, 0, 90, 0)
     ):
@@ -307,9 +307,9 @@ class Meca500:
                     print("[Meca500] Stop signal received. Exiting grid routine.")
                     break
     
-                if skip_columns == 'odd' and col % 2 == 0:
+                if skip_columns == 'Odd' and col % 2 == 0:
                     continue
-                elif skip_columns == 'even' and col % 2 == 1:
+                elif skip_columns == 'Even' and col % 2 == 1:
                     continue
     
                 x = x0 + col * row_dx + row * col_dx

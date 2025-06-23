@@ -7,13 +7,12 @@ Created on Wed Jun 18 10:59:29 2025
 import sys
 import threading
 from PyQt5.QtWidgets import (
-    QApplication, QWidget, QPushButton, QVBoxLayout, QTextEdit
+    QApplication, QWidget, QPushButton, QVBoxLayout, QTextEdit, QFormLayout, QLineEdit, QCheckBox, QComboBox, QLabel
 )
 from PyQt5.QtCore import QThread, pyqtSignal
 
 from meca500 import Meca500
 from stepper import Stepper
-
 
 class RobotWorker(QThread):
     finished = pyqtSignal()
@@ -25,6 +24,17 @@ class RobotWorker(QThread):
         self.stepper = stepper
         self._stop_event = threading.Event()
 
+        
+        self.A1 = (140.63, -49.80)
+        self.A12 = (139.34, 49.34)
+        self.H12 = (202.46, 49.77)
+        self.z_height = 218
+        self.rows = 8
+        self.cols = 12
+        self.angles = (0, 90, 0)
+        self.run_cleaning = False
+        self.skip_columns = None
+
     def run(self):
         try:
             self.arm.connect()
@@ -32,12 +42,15 @@ class RobotWorker(QThread):
             self.message.emit("Running grid routine...")
 
             self.arm.grid_from_references(
-                A1=(140.63, -49.80),
-                A12=(139.34, 49.34),
-                H12=(202.46, 49.77),
-                z_height=218,
-                run_cleaning=False,
-                skip_columns='even',
+                A1=self.A1,
+                A12=self.A12,
+                H12=self.H12,
+                z_height=self.z_height,
+                rows=self.rows,
+                cols=self.cols,
+                angles=self.angles,
+                run_cleaning=self.run_cleaning,
+                skip_columns=self.skip_columns,
                 should_stop=self._stop_event
             )
 
@@ -52,6 +65,7 @@ class RobotWorker(QThread):
         self._stop_event.set()
 
 
+
 class GUI(QWidget):
     def __init__(self):
         super().__init__()
@@ -62,7 +76,7 @@ class GUI(QWidget):
 
         # UI Elements
         self.layout = QVBoxLayout()
-
+        """Buttons"""
         self.start_btn = QPushButton("Start Grid Routine")
         self.start_btn.clicked.connect(self.start_routine)
         self.layout.addWidget(self.start_btn)
@@ -76,9 +90,41 @@ class GUI(QWidget):
         self.reset_btn.clicked.connect(self.reset_error)
         self.layout.addWidget(self.reset_btn)
 
+        """CMD output"""
         self.status_display = QTextEdit()
         self.status_display.setReadOnly(True)
         self.layout.addWidget(self.status_display)
+
+        """ Grid Parameter Inputs"""
+        form_layout = QFormLayout()
+        
+        self.input_a1_x = QLineEdit("140.63")
+        self.input_a1_y = QLineEdit("-49.80")
+        form_layout.addRow("A1 X:", self.input_a1_x)
+        form_layout.addRow("A1 Y:", self.input_a1_y)
+        
+        self.input_a12_x = QLineEdit("139.34")
+        self.input_a12_y = QLineEdit("49.34")
+        form_layout.addRow("A12 X:", self.input_a12_x)
+        form_layout.addRow("A12 Y:", self.input_a12_y)
+        
+        self.input_h12_x = QLineEdit("202.46")
+        self.input_h12_y = QLineEdit("49.77")
+        form_layout.addRow("H12 X:", self.input_h12_x)
+        form_layout.addRow("H12 Y:", self.input_h12_y)
+        
+        self.input_z_height = QLineEdit("218")
+        form_layout.addRow("Z Height:", self.input_z_height)
+        
+        self.cleaning_checkbox = QCheckBox("Run Cleaning")
+        self.cleaning_checkbox.setChecked(False)
+        form_layout.addRow(self.cleaning_checkbox)
+        
+        self.skip_dropdown = QComboBox()
+        self.skip_dropdown.addItems(["None", "Even", "Odd"])
+        form_layout.addRow(QLabel("Skip Columns:"), self.skip_dropdown)
+        
+        self.layout.addLayout(form_layout)
 
         self.setLayout(self.layout)
 
@@ -87,11 +133,35 @@ class GUI(QWidget):
 
     def start_routine(self):
         self.log("Starting grid routine...")
+    
+        try:
+            """Parse GUI input fields"""
+            A1 = (float(self.input_a1_x.text()), float(self.input_a1_y.text()))
+            A12 = (float(self.input_a12_x.text()), float(self.input_a12_y.text()))
+            H12 = (float(self.input_h12_x.text()), float(self.input_h12_y.text()))
+            z_height = float(self.input_z_height.text())
+            run_cleaning = self.cleaning_checkbox.isChecked()
+    
+            skip_val = self.skip_dropdown.currentText()
+            skip_columns = None if skip_val == "None" else skip_val
+    
+        except ValueError as e:
+            self.log(f"Invalid input: {e}")
+            return
+    
+        """Set up and launch worker thread"""
         self.worker = RobotWorker(self.arm, self.stepper)
+        self.worker.A1 = A1
+        self.worker.A12 = A12
+        self.worker.H12 = H12
+        self.worker.z_height = z_height
+        self.worker.run_cleaning = run_cleaning
+        self.worker.skip_columns = skip_columns
+    
         self.worker.message.connect(self.log)
         self.worker.finished.connect(self.routine_done)
         self.worker.start()
-
+    
         self.start_btn.setEnabled(False)
         self.stop_btn.setEnabled(True)
 
@@ -134,5 +204,6 @@ if __name__ == "__main__":
     gui = GUI()
     gui.show()
     sys.exit(app.exec_())
+
 
 
