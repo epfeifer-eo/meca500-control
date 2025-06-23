@@ -85,7 +85,9 @@ class Stepper:
         if target_speed <= 0:
             self.stop()
             return
-    
+        
+        self.forward()
+        
         steps = 20
         for i in range(1, steps + 1):
             speed = (target_speed / steps) * i
