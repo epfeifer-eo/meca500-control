@@ -6,8 +6,12 @@ Created on Wed Jun 18 10:59:29 2025
 """
 import sys
 import threading
+import json
+import os
+
 from PyQt5.QtWidgets import (
-    QApplication, QWidget, QPushButton, QVBoxLayout, QTextEdit, QFormLayout, QLineEdit, QCheckBox, QComboBox, QLabel
+    QApplication, QWidget, QPushButton, QVBoxLayout, QTextEdit, QFormLayout,
+    QLineEdit, QCheckBox, QComboBox, QLabel, QInputDialog
 )
 from PyQt5.QtCore import QThread, pyqtSignal
 
@@ -76,7 +80,24 @@ class GUI(QWidget):
 
         # UI Elements
         self.layout = QVBoxLayout()
-        """Buttons"""
+
+        # Load/Save Presets
+        self.presets_dropdown = QComboBox()
+        self.load_presets()
+        self.layout.addWidget(self.presets_dropdown)
+        
+        self.save_btn = QPushButton("Save Preset")
+        self.save_btn.clicked.connect(self.save_preset)
+        self.layout.addWidget(self.save_btn)
+        
+        self.load_btn = QPushButton("Load Preset")
+        self.load_btn.clicked.connect(self.load_selected_preset)
+        self.layout.addWidget(self.load_btn)
+
+
+        
+
+        # Buttons
         self.start_btn = QPushButton("Start Grid Routine")
         self.start_btn.clicked.connect(self.start_routine)
         self.layout.addWidget(self.start_btn)
@@ -90,12 +111,12 @@ class GUI(QWidget):
         self.reset_btn.clicked.connect(self.reset_error)
         self.layout.addWidget(self.reset_btn)
 
-        """CMD output"""
+        # CMD output
         self.status_display = QTextEdit()
         self.status_display.setReadOnly(True)
         self.layout.addWidget(self.status_display)
 
-        """ Grid Parameter Inputs"""
+        # Grid Parameter Inputs
         form_layout = QFormLayout()
         
         self.input_a1_x = QLineEdit("140.63")
@@ -131,11 +152,70 @@ class GUI(QWidget):
     def log(self, message):
         self.status_display.append(message)
 
+    def load_presets(self):
+        self.presets_file = "presets.json"
+        if not os.path.exists(self.presets_file):
+            with open(self.presets_file, "w") as f:
+                json.dump({}, f)
+    
+        with open(self.presets_file, "r") as f:
+            self.presets = json.load(f)
+    
+        self.presets_dropdown.clear()
+        self.presets_dropdown.addItems(self.presets.keys())
+    
+    def save_preset(self):
+        name, ok = QInputDialog.getText(self, "Save Preset", "Preset name:")
+        if not ok or not name.strip():
+            return
+        name = name.strip()
+    
+        # Gather values from GUI
+        preset = {
+            "A1": [float(self.input_a1_x.text()), float(self.input_a1_y.text())],
+            "A12": [float(self.input_a12_x.text()), float(self.input_a12_y.text())],
+            "H12": [float(self.input_h12_x.text()), float(self.input_h12_y.text())],
+            "z_height": float(self.input_z_height.text()),
+            "run_cleaning": self.cleaning_checkbox.isChecked(),
+            "skip_columns": self.skip_dropdown.currentText()
+        }
+        if preset["skip_columns"] == "None":
+            preset["skip_columns"] = None
+    
+        self.presets[name] = preset
+        with open(self.presets_file, "w") as f:
+            json.dump(self.presets, f, indent=2)
+    
+        self.load_presets()
+        self.log(f"Preset '{name}' saved.")
+    
+    def load_selected_preset(self):
+        name = self.presets_dropdown.currentText()
+        if not name or name not in self.presets:
+            self.log("No preset selected.")
+            return
+    
+        preset = self.presets[name]
+        self.input_a1_x.setText(str(preset["A1"][0]))
+        self.input_a1_y.setText(str(preset["A1"][1]))
+        self.input_a12_x.setText(str(preset["A12"][0]))
+        self.input_a12_y.setText(str(preset["A12"][1]))
+        self.input_h12_x.setText(str(preset["H12"][0]))
+        self.input_h12_y.setText(str(preset["H12"][1]))
+        self.input_z_height.setText(str(preset["z_height"]))
+        self.cleaning_checkbox.setChecked(preset["run_cleaning"])
+    
+        idx = self.skip_dropdown.findText(preset["skip_columns"] or "None")
+        self.skip_dropdown.setCurrentIndex(idx)
+    
+        self.log(f"Preset '{name}' loaded.")
+
+
     def start_routine(self):
         self.log("Starting grid routine...")
     
         try:
-            """Parse GUI input fields"""
+            # Parse GUI input fields
             A1 = (float(self.input_a1_x.text()), float(self.input_a1_y.text()))
             A12 = (float(self.input_a12_x.text()), float(self.input_a12_y.text()))
             H12 = (float(self.input_h12_x.text()), float(self.input_h12_y.text()))
@@ -149,7 +229,7 @@ class GUI(QWidget):
             self.log(f"Invalid input: {e}")
             return
     
-        """Set up and launch worker thread"""
+        # Set up and launch worker thread
         self.worker = RobotWorker(self.arm, self.stepper)
         self.worker.A1 = A1
         self.worker.A12 = A12
