@@ -68,19 +68,30 @@ class Stepper:
         """
         Sets stepper speed. Higher is faster.
         """
+        if steps_per_sec <= 0:
+            self.step_delay = None
+            print("[Stepper] Speed set to 0 (stopped)")
+            return
         self.step_delay = 1.0 / steps_per_sec
         print(f"[Stepper] Speed set to {steps_per_sec} steps/sec")
+
 
     def set_acceleration(self, ramp_time=1.0, target_speed=500):
         """
         Gradually increases speed over ramp_time (in seconds).
         """
         print(f"[Stepper] Ramping up to {target_speed} steps/sec over {ramp_time}s")
+    
+        if target_speed <= 0:
+            self.stop()
+            return
+    
         steps = 20
         for i in range(1, steps + 1):
             speed = (target_speed / steps) * i
             self.set_speed(speed)
             time.sleep(ramp_time / steps)
+
 
     def cleanup(self):
         print("[Stepper] Cleaning up GPIO")
