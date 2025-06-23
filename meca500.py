@@ -222,6 +222,55 @@ class Meca500:
                 if run_cleaning:
                     self.clean()
 
+    # def grid_from_references(
+    #     self,
+    #     A1: Tuple[float, float],
+    #     A12: Tuple[float, float],
+    #     H12: Tuple[float, float],
+    #     z_height: float = 308,
+    #     rows: int = 8,
+    #     cols: int = 12,
+    #     angles: Tuple[float, float, float] = (0, 90, 0),
+    #     run_cleaning: bool = True,
+    #     skip_columns: Optional[str] = None,  # 'even', 'odd', or (Default)=None
+    #     safe_pose: Tuple[float, float, float, float, float, float] = (190, 0, 308, 0, 90, 0)
+    # ):
+    #     x0, y0 = A1                 # A1 (tuple): (x, y) coordinates of top-left well (row 0, col 0)
+    #     x1, y1 = A12                # A12 (tuple): (x, y) coordinates of top-right well (row 0, col 11)
+    #     x2, y2 = H12                # H12 (tuple): (x, y) coordinates of bottom-right well (row 7, col 11)
+    #     alpha, beta, gamma = angles
+    
+    #     row_dx = (x1 - x0) / (cols - 1)
+    #     row_dy = (y1 - y0) / (cols - 1)
+    #     col_dx = (x2 - x1) / (rows - 1)
+    #     col_dy = (y2 - y1) / (rows - 1)
+    
+    #     for row in range(rows):
+    #         col_range = range(cols) if row % 2 == 0 else range(cols - 1, -1, -1)
+    
+    #         for col in col_range:
+    #             if skip_columns == 'odd' and col % 2 == 0:
+    #                 continue
+    #             elif skip_columns == 'even' and col % 2 == 1:
+    #                 continue
+    
+    #             x = x0 + col * row_dx + row * col_dx
+    #             y = y0 + col * row_dy + row * col_dy
+    
+    #             print(f"[Meca500] Moving to grid point ({row}, {col}) at ({x:.2f}, {y:.2f}, {z_height})")
+    
+    #             if not self.is_pose_safe(x, y, z_height, alpha, beta, gamma):
+    #                 print("[Meca500] Skipping unsafe pose.")
+    #                 continue
+    
+    #             self.move_pose(x, y, z_height, alpha, beta, gamma)
+    #             self.tap()
+    #             if run_cleaning:
+    #                 self.clean()
+    #     print(f"[Meca500] Returning to safe pose: {safe_pose}")
+    #     self.move_pose(*safe_pose)
+    #     self.move_joints(0, 0, 0, 0, 0, 0)
+
     def grid_from_references(
         self,
         A1: Tuple[float, float],
@@ -232,12 +281,13 @@ class Meca500:
         cols: int = 12,
         angles: Tuple[float, float, float] = (0, 90, 0),
         run_cleaning: bool = True,
-        skip_columns: Optional[str] = None,  # 'even', 'odd', or (Default)=None
-        safe_pose: Tuple[float, float, float, float, float, float] = (190, 0, 308, 0, 90, 0)
+        skip_columns: Optional[str] = None,  # 'even', 'odd', or None
+        should_stop: Optional[threading.Event] = None,  # Optional stop flag
+        return_safe_pose: Tuple[float, float, float, float, float, float] = (190, 0, 308, 0, 90, 0)
     ):
-        x0, y0 = A1                 # A1 (tuple): (x, y) coordinates of top-left well (row 0, col 0)
-        x1, y1 = A12                # A12 (tuple): (x, y) coordinates of top-right well (row 0, col 11)
-        x2, y2 = H12                # H12 (tuple): (x, y) coordinates of bottom-right well (row 7, col 11)
+        x0, y0 = A1
+        x1, y1 = A12
+        x2, y2 = H12
         alpha, beta, gamma = angles
     
         row_dx = (x1 - x0) / (cols - 1)
@@ -246,9 +296,17 @@ class Meca500:
         col_dy = (y2 - y1) / (rows - 1)
     
         for row in range(rows):
+            if should_stop and should_stop.is_set():
+                print("[Meca500] Stop signal received. Exiting grid routine.")
+                break
+    
             col_range = range(cols) if row % 2 == 0 else range(cols - 1, -1, -1)
     
             for col in col_range:
+                if should_stop and should_stop.is_set():
+                    print("[Meca500] Stop signal received. Exiting grid routine.")
+                    break
+    
                 if skip_columns == 'odd' and col % 2 == 0:
                     continue
                 elif skip_columns == 'even' and col % 2 == 1:
@@ -263,41 +321,55 @@ class Meca500:
                     print("[Meca500] Skipping unsafe pose.")
                     continue
     
-                self.move_pose(x, y, z_height, alpha, beta, gamma)
-                self.tap()
-                if run_cleaning:
-                    self.clean()
-        print(f"[Meca500] Returning to safe pose: {safe_pose}")
-        self.move_pose(*safe_pose)
-        self.move_joints(0, 0, 0, 0, 0, 0)
+                try:
+                    self.move_pose(x, y, z_height, alpha, beta, gamma)
+                    self.tap()
+                    if run_cleaning:
+                        self.clean()
+                except Exception as e:
+                    print(f"[Meca500] ERROR: Failed at grid point ({row}, {col}) — {e}")
+                    break
+    
+        """If stop was triggered, move to safe pose"""
+        if should_stop and should_stop.is_set():
+            try:
+                print(f"[Meca500] Moving to safe pose {return_safe_pose}")
+                self.move_pose(*return_safe_pose)
+            except Exception as e:
+                print(f"[Meca500] ERROR: Could not return to safe pose — {e}")
+        try:
+            print(f"[Meca500] Returning to safe pose: {return_safe_pose}")
+            self.move_pose(*return_safe_pose)
+            self.move_joints(0, 0, 0, 0, 0, 0)
+        except Exception as e:
+            print(f"[Meca500] ERROR: Could not return to safe pose — {e}")
 
     def abort_and_recover(self, safe_pose=(190, 0, 308, 0, 90, 0)):
         print("[Meca500] Aborting and recovering...")
+    
         try:
-            self.robot.StopMotion()
+            self.robot.SendCustomCommand("Abort")
         except Exception as e:
-            print(f"[Meca500] StopMotion failed — {e}")
-
+            print(f"[Meca500] Abort failed — {e}")
+    
         try:
             self.robot.ResetError()
         except Exception as e:
             print(f"[Meca500] ResetError failed — {e}")
-
+    
         if not self.connected:
             try:
                 self.connect()
             except Exception as e:
                 print(f"[Meca500] Reconnect failed — {e}")
                 return
-
+    
         try:
             self.robot.ActivateRobot()
-            time.sleep(0.2)
-            print(f"[Meca500] Moving to safe pose: {safe_pose}")
-            self.robot.MovePose(*safe_pose)
-            self.robot.WaitIdle(timeout=10)
+            self.move_pose(*safe_pose)
         except Exception as e:
-            print(f"[Meca500] Failed to reach safe pose — {e}")
+            print(f"[Meca500] Recovery move failed — {e}")
+
 
     def disconnect(self):
         if self.connected:
