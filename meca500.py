@@ -12,7 +12,7 @@ from typing import Tuple, Optional
 
 
 class Meca500:
-    def __init__(self, ip_address="192.168.0.100"):
+    def __init__(self, ip_address="192.168.0.100", stepper=None):
         self.ip = ip_address
         self.robot = Robot()
         self.connected = False
