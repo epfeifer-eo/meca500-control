@@ -11,9 +11,9 @@ from stepper import Stepper
 
 stepper = Stepper()
 stepper.forward()
-stepper.set_acceleration(ramp_time=0.1, target_speed=1000)
+stepper.set_acceleration(ramp_time=0.5, target_speed=1000)
 time.sleep(1)
-stepper.set_acceleration(ramp_time=0.1, target_speed=0)
+stepper.set_acceleration(ramp_time=0.5, target_speed=0)
 stepper.stop()
 
 
