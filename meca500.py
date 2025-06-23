@@ -16,6 +16,7 @@ class Meca500:
         self.ip = ip_address
         self.robot = Robot()
         self.connected = False
+        self.stepper = stepper
 
     def connect(self):
         if not self.connected:
@@ -116,15 +117,28 @@ class Meca500:
             self.robot.MoveLinRelWrf(0, 0, -distance_mm, 0, 0, 0)
             self.robot.WaitIdle()
     #TODO: add gpio on/off for stepper
+            if self.stepper:
+                print("[Meca500] Activating stepper motor")
+                self.stepper.forward()
+    
+    
             print(f"[Meca500] Pausing for {pause_sec} seconds")
             time.sleep(pause_sec)
     
+    
+            if self.stepper:
+                print("[Meca500] Stopping stepper motor")
+                self.stepper.stop()
+            
+            
             print(f"[Meca500] Moving back up {distance_mm} mm")
             self.robot.MoveLinRelWrf(0, 0, distance_mm, 0, 0, 0)
             self.robot.WaitIdle()
     
         except Exception as e:
             print(f"[Meca500] ERROR: Tap-down failed — {e}")
+            if self.stepper:
+                self.stepper.stop()
             
     
     def nod(self, mode="yes"):

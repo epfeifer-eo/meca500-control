@@ -74,8 +74,8 @@ class GUI(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Meca500 Controller")
-        self.arm = Meca500()
         self.stepper = Stepper()
+        self.arm = Meca500(stepper=self.stepper)
         self.worker = None
 
         # UI Elements
