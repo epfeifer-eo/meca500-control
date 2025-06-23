@@ -101,14 +101,8 @@ class Meca500:
                 print(f"[Meca500] ERROR: Failed to move to pose {pose} — {e}")
                 self.connected = False
                 break
-    def tap(self, distance_mm=8, pause_sec=0.5, cart_vel=2):
-        """Moves the end effector straight down and back up along Z using relative linear motion.
-    
-        Args:
-            distance_mm (float): Distance to move down and then up (in mm).
-            pause_sec (float): Time to pause at the bottom position (in seconds).
-            cart_vel (float): Cartesian velocity in mm/s (default: 50).
-        """
+    def tap(self, distance_mm=8, pause_sec=0.5, cart_vel=5, ramp_time=0.5, target_speed=500):
+        """Moves the end effector down and back up, spinning the stepper motor with ramp up/down."""
         try:
             print(f"[Meca500] Setting Cartesian velocity to {cart_vel} mm/s")
             self.robot.SetCartLinVel(cart_vel)
@@ -118,19 +112,18 @@ class Meca500:
             self.robot.WaitIdle()
     
             if self.stepper:
-                print("[Meca500] Activating stepper motor")
+                print("[Meca500] Ramping up stepper motor")
                 self.stepper.forward()
-    
+                self.stepper.set_acceleration(ramp_time=ramp_time, target_speed=target_speed)
     
             print(f"[Meca500] Pausing for {pause_sec} seconds")
             time.sleep(pause_sec)
     
-    
             if self.stepper:
-                print("[Meca500] Stopping stepper motor")
+                print("[Meca500] Ramping down and stopping stepper motor")
+                self.stepper.set_acceleration(ramp_time=ramp_time, target_speed=0)
                 self.stepper.stop()
-            
-            
+    
             print(f"[Meca500] Moving back up {distance_mm} mm")
             self.robot.MoveLinRelWrf(0, 0, distance_mm, 0, 0, 0)
             self.robot.WaitIdle()
@@ -139,7 +132,7 @@ class Meca500:
             print(f"[Meca500] ERROR: Tap-down failed — {e}")
             if self.stepper:
                 self.stepper.stop()
-            
+
     
     def nod(self, mode="yes"):
         """
