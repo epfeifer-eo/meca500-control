@@ -38,7 +38,7 @@ class RobotWorker(QThread):
                 z_height=218,
                 run_cleaning=False,
                 skip_columns='even',
-                # should_stop=self._stop_event
+                should_stop=self._stop_event
             )
 
         except Exception as e:
@@ -48,8 +48,8 @@ class RobotWorker(QThread):
             self.arm.disconnect()
             self.finished.emit()
 
-    # def stop(self):
-    #     self._stop_event.set()
+    def stop(self):
+        self._stop_event.set()
 
 
 class GUI(QWidget):
@@ -67,10 +67,10 @@ class GUI(QWidget):
         self.start_btn.clicked.connect(self.start_routine)
         self.layout.addWidget(self.start_btn)
 
-        # self.stop_btn = QPushButton("Stop")
-        # self.stop_btn.clicked.connect(self.stop_routine)
-        # self.stop_btn.setEnabled(False)
-        # self.layout.addWidget(self.stop_btn)
+        self.stop_btn = QPushButton("Stop")
+        self.stop_btn.clicked.connect(self.stop_routine)
+        self.stop_btn.setEnabled(False)
+        self.layout.addWidget(self.stop_btn)
 
         self.reset_btn = QPushButton("Reset Error")
         self.reset_btn.clicked.connect(self.reset_error)
@@ -93,37 +93,40 @@ class GUI(QWidget):
         self.worker.start()
 
         self.start_btn.setEnabled(False)
-        # self.stop_btn.setEnabled(True)
+        self.stop_btn.setEnabled(True)
 
-    # def stop_routine(self):
-    #     self.log("Stop button pressed.")
-    #     if self.worker:
-    #         self.worker.stop()
-    #     try:
-    #         self.arm.abort_and_recover()
-    #         self.log("Abort and recovery complete.")
-    #     except Exception as e:
-    #         self.log(f"Failed to abort: {e}")
-
-    #     self.start_btn.setEnabled(True)
-    #     self.stop_btn.setEnabled(False)
+    def stop_routine(self):
+        self.log("Stop button pressed.")
+        if self.worker:
+            self.worker.stop()
+            self.log("Stop signal sent to robot routine. Waiting for thread to finish...")
+            self.stop_btn.setEnabled(False)
 
     def routine_done(self):
         self.log("Routine finished.")
         self.start_btn.setEnabled(True)
-        # self.stop_btn.setEnabled(False)
-        
+        self.stop_btn.setEnabled(False)
+
+        if self.worker and self.worker._stop_event.is_set():
+            self.log("Routine was stopped. Attempting recovery...")
+            try:
+                self.arm.connect()
+                self.arm.robot.ResetError()
+                self.arm.robot.ActivateRobot()
+                self.arm.move_pose(190, 0, 308, 0, 90, 0)
+                self.log("Recovery complete.")
+            except Exception as e:
+                self.log(f"Recovery failed: {e}")
 
     def reset_error(self):
         self.log("Resetting robot error...")
         try:
-            self.arm.connect()  
+            self.arm.connect()
             self.arm.robot.ResetError()
-            self.arm.robot.ActivateRobot()  
+            self.arm.robot.ActivateRobot()
             self.log("Robot error reset successfully.")
         except Exception as e:
             self.log(f"Failed to reset error: {e}")
-
 
 
 if __name__ == "__main__":
