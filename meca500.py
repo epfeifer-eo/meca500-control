@@ -123,7 +123,7 @@ class Meca500:
     
             if self.stepper:
                 print("[Meca500] Ramping down while ascending")
-                self.stepper.ramp_to_speed(0, ramp_time, async_mode=True)
+                self.stepper.ramp_to_speed(0, (2*ramp_time), async_mode=True)
     
             print(f"[Meca500] Moving back up {distance_mm} mm")
             self.robot.MoveLinRelWrf(0, 0, distance_mm, 0, 0, 0)
