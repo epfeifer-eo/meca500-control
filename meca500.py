@@ -110,7 +110,7 @@ class Meca500:
     
             if self.stepper:
                 print("[Meca500] Ramping up while descending")
-                self.stepper.forward()
+                self.stepper.forward(speed=100)
                 self.stepper.ramp_to_speed(target_speed, ramp_time, async_mode=True)
     
             print(f"[Meca500] Moving down {distance_mm} mm")

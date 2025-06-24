@@ -37,26 +37,14 @@ class Stepper:
             time.sleep(delay / 2)
             self.pul.off()
             time.sleep(delay / 2)
-
-    def forward(self, speed=None):
-        self.dir.on()
-        self._start(speed)
-
-    def reverse(self, speed=None):
-        self.dir.off()
-        self._start(speed)
-
-    def _start(self, speed):
+            
+    def _start(self):
         if self._running:
-            return  
-    
-        with self._lock:
-            if speed:
-                self._speed = max(1, speed)
+            return
         self._running = True
         self._thread = threading.Thread(target=self._step_loop, daemon=True)
         self._thread.start()
-
+        
     def stop(self):
         if self._running:
             self._running = False
@@ -64,19 +52,30 @@ class Stepper:
                 self._thread.join()
             self.pul.off()
             self._thread = None
-
+            
     def set_speed(self, speed):
+        """Set the speed immediately (does not start motor)."""
         with self._lock:
             self._speed = max(1, speed)
-
-
+    
+    def forward(self, speed=None):
+        """Set direction and start spinning (optionally with initial speed)."""
+        self.dir.on()
+        if speed:
+            self.set_speed(speed)
+        self._start()
+    
+    def reverse(self, speed=None):
+        self.dir.off()
+        if speed:
+            self.set_speed(speed)
+        self._start()
+    
     def ramp_to_speed(self, target_speed, ramp_time=1.0, steps=20, async_mode=False):
-        """
-        Ramp the stepper speed to a target over a given time.
-        If async_mode=True, runs in a background thread.
-        """
+        """Ramp the speed to a target value. Assumes motor is already running."""
         def ramp():
-            current_speed = self._speed
+            with self._lock:
+                current_speed = self._speed
             delta = target_speed - current_speed
             for i in range(1, steps + 1):
                 speed = current_speed + (delta * i / steps)
