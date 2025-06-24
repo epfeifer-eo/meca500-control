@@ -103,7 +103,9 @@ class Meca500:
                 self.connected = False
                 break
 
-    def tap(self, distance_mm=8, pause_sec=0.5, cart_vel=5, ramp_time=1.5, target_speed=26000):
+    def tap(self,
+            distance_mm=8, pause_sec=0.5, cart_vel=5, ramp_time=1.5,
+            target_speed=26000, circle_radius=0.5, circle_points=12):
         """Tap while stepper ramps up during descent and ramps down during ascent."""
         try:
             print(f"[Meca500] Setting Cartesian velocity to {cart_vel} mm/s")
@@ -117,17 +119,39 @@ class Meca500:
             print(f"[Meca500] Moving down {distance_mm} mm")
             self.robot.MoveLinRelWrf(0, 0, -distance_mm, 0, 0, 0)
             self.robot.WaitIdle()
+            
+            time.sleep(pause_sec / 2)
+
+            print(f"[Meca500] Drawing circle pattern at bottom (radius={circle_radius} mm)")
+            import math
+            path = []
+            for i in range(circle_points):
+                angle = 2 * math.pi * i / circle_points
+                dx = circle_radius * math.cos(angle)
+                dy = circle_radius * math.sin(angle)
+                path.append((dx, dy))
     
-            print(f"[Meca500] Pausing for {pause_sec} seconds")
-            time.sleep(pause_sec/2)
-            self.robot.MoveLinRelWrf(1, 0, 0, 0, 0, 0)
-            self.robot.MoveLinRelWrf(-2, 0, 0, 0, 0, 0)
-            self.robot.MoveLinRelWrf(1, 0, 0, 0, 0, 0)
-            self.robot.MoveLinRelWrf(0, 1, 0, 0, 0, 0)
-            self.robot.MoveLinRelWrf(0, -2, 0, 0, 0, 0)
-            self.robot.MoveLinRelWrf(0, 1, 0, 0, 0, 0)
-            self.robot.WaitIdle()
-            time.sleep(pause_sec/2)
+            # Draw circle
+            for dx, dy in path:
+                self.robot.MoveLinRelWrf(dx, dy, 0, 0, 0, 0)
+    
+            # Return to center (reverse the path)
+            for dx, dy in reversed(path):
+                self.robot.MoveLinRelWrf(-dx, -dy, 0, 0, 0, 0)
+    
+            time.sleep(pause_sec / 2)
+
+
+            # print(f"[Meca500] Pausing for {pause_sec} seconds")
+            # time.sleep(pause_sec/2)
+            # self.robot.MoveLinRelWrf(1, 0, 0, 0, 0, 0)
+            # self.robot.MoveLinRelWrf(-2, 0, 0, 0, 0, 0)
+            # self.robot.MoveLinRelWrf(1, 0, 0, 0, 0, 0)
+            # self.robot.MoveLinRelWrf(0, 1, 0, 0, 0, 0)
+            # self.robot.MoveLinRelWrf(0, -2, 0, 0, 0, 0)
+            # self.robot.MoveLinRelWrf(0, 1, 0, 0, 0, 0)
+            # self.robot.WaitIdle()
+            # time.sleep(pause_sec/2)
     
             if self.stepper:
                 print("[Meca500] Ramping down while ascending")
