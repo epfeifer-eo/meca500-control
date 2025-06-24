@@ -6,24 +6,29 @@ Created on Thu May 29 13:17:00 2025
 """
 import time
 from stepper import Stepper
-
+from meca500 import Meca500
 stepper = Stepper()
+robot = Meca500()
 
 try:
     print("[Test] Running forward for 2 seconds")
-    stepper.forward(speed=2400)
-    time.sleep(2)
+    robot.tap()
 
-    print("[Test] Reversing for 2 seconds")
-    stepper.reverse(speed=800)
-    time.sleep(2)
+# try:
+#     print("[Test] Running forward for 2 seconds")
+#     stepper.forward(speed=2400)
+#     time.sleep(2)
 
-    print("[Test] Stopping")
-    stepper.stop()
+#     print("[Test] Reversing for 2 seconds")
+#     stepper.reverse(speed=800)
+#     time.sleep(2)
 
-finally:
-    print("[Test] Cleaning up GPIO")
-    stepper.cleanup()
+#     print("[Test] Stopping")
+#     stepper.stop()
+
+# finally:
+#     print("[Test] Cleaning up GPIO")
+#     stepper.cleanup()
 
 
 

@@ -102,7 +102,7 @@ class Meca500:
                 self.connected = False
                 break
 
-    def tap(self, distance_mm=8, pause_sec=0.5, cart_vel=5, ramp_time=1.5, target_speed=3600):
+    def tap(self, distance_mm=8, pause_sec=0.5, cart_vel=5, ramp_time=1.5, target_speed=26000):
         """Tap while stepper ramps up during descent and ramps down during ascent."""
         try:
             print(f"[Meca500] Setting Cartesian velocity to {cart_vel} mm/s")
