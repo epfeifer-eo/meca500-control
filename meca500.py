@@ -141,11 +141,16 @@ class Meca500:
     
             time.sleep(pause_sec / 2)
     
-            if self.stepper:
-                print("[Meca500] Preparing ramp down thread to align with ascent")
-                threading.Timer(0.05, lambda: self.stepper.ramp_to_speed(0, (2*ramp_time), async_mode=True)).start()
-        
             print(f"[Meca500] Moving back up {distance_mm} mm")
+
+            if self.stepper:
+                def delayed_ramp_down():
+                    time.sleep(0.05)  # Small delay to ensure robot starts moving
+                    print("[Meca500] Ramping down while ascending")
+                    self.stepper.ramp_to_speed(0, (2 * ramp_time), async_mode=True)
+            
+                threading.Thread(target=delayed_ramp_down, daemon=True).start()
+            
             self.robot.MoveLinRelWrf(0, 0, distance_mm, 0, 0, 0)
             self.robot.WaitIdle()
     
