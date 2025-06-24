@@ -76,11 +76,22 @@ class Stepper:
         def ramp():
             with self._lock:
                 current_speed = self._speed
-            delta = target_speed - current_speed
+            min_speed = 20 if target_speed > 0 else 0
+            start_speed = max(min_speed, current_speed)
+            delta = target_speed - start_speed
+            if steps <= 0:
+                self.set_speed(target_speed)
+                return
+    
             for i in range(1, steps + 1):
-                speed = current_speed + (delta * i / steps)
+                speed = start_speed + (delta * i / steps)
+                if target_speed == 0 and speed < 50:
+                    continue  
                 self.set_speed(speed)
                 time.sleep(ramp_time / steps)
+    
+            if target_speed == 0:
+                self.stop()
     
         if async_mode:
             thread = threading.Thread(target=ramp, daemon=True)
