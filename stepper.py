@@ -47,7 +47,9 @@ class Stepper:
         self._start(speed)
 
     def _start(self, speed):
-        self.stop()
+        if self._running:
+            return  
+    
         with self._lock:
             if speed:
                 self._speed = max(1, speed)

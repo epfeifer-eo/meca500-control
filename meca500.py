@@ -114,14 +114,13 @@ class Meca500:
             if self.stepper:
                 print("[Meca500] Ramping up stepper motor")
                 self.stepper.forward()
-                self.stepper.set_acceleration(ramp_time=ramp_time, target_speed=target_speed)
+                
     
             print(f"[Meca500] Pausing for {pause_sec} seconds")
             time.sleep(pause_sec)
     
             if self.stepper:
                 print("[Meca500] Ramping down and stopping stepper motor")
-                self.stepper.set_acceleration(ramp_time=ramp_time, target_speed=0)
                 self.stepper.stop()
     
             print(f"[Meca500] Moving back up {distance_mm} mm")
