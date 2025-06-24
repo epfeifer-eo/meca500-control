@@ -102,39 +102,39 @@ class Meca500:
                 self.connected = False
                 break
 
-        def tap(self, distance_mm=8, pause_sec=0.5, cart_vel=1, ramp_time=1, target_speed=800):
-            """Tap while stepper ramps up during descent and ramps down during ascent."""
-            try:
-                print(f"[Meca500] Setting Cartesian velocity to {cart_vel} mm/s")
-                self.robot.SetCartLinVel(cart_vel)
-        
-                if self.stepper:
-                    print("[Meca500] Ramping up while descending")
-                    self.stepper.forward()
-                    self.stepper.ramp_to_speed_async(target_speed, ramp_time)
-        
-                print(f"[Meca500] Moving down {distance_mm} mm")
-                self.robot.MoveLinRelWrf(0, 0, -distance_mm, 0, 0, 0)
-                self.robot.WaitIdle()
-        
-                print(f"[Meca500] Pausing for {pause_sec} seconds")
-                time.sleep(pause_sec)
-        
-                if self.stepper:
-                    print("[Meca500] Ramping down while ascending")
-                    self.stepper.ramp_to_speed_async(0, ramp_time)
-        
-                print(f"[Meca500] Moving back up {distance_mm} mm")
-                self.robot.MoveLinRelWrf(0, 0, distance_mm, 0, 0, 0)
-                self.robot.WaitIdle()
-        
-                if self.stepper:
-                    self.stepper.stop()
-        
-            except Exception as e:
-                print(f"[Meca500] ERROR: Tap failed — {e}")
-                if self.stepper:
-                    self.stepper.stop()
+    def tap(self, distance_mm=8, pause_sec=0.5, cart_vel=1, ramp_time=1, target_speed=800):
+        """Tap while stepper ramps up during descent and ramps down during ascent."""
+        try:
+            print(f"[Meca500] Setting Cartesian velocity to {cart_vel} mm/s")
+            self.robot.SetCartLinVel(cart_vel)
+    
+            if self.stepper:
+                print("[Meca500] Ramping up while descending")
+                self.stepper.forward()
+                self.stepper.ramp_to_speed_async(target_speed, ramp_time)
+    
+            print(f"[Meca500] Moving down {distance_mm} mm")
+            self.robot.MoveLinRelWrf(0, 0, -distance_mm, 0, 0, 0)
+            self.robot.WaitIdle()
+    
+            print(f"[Meca500] Pausing for {pause_sec} seconds")
+            time.sleep(pause_sec)
+    
+            if self.stepper:
+                print("[Meca500] Ramping down while ascending")
+                self.stepper.ramp_to_speed_async(0, ramp_time)
+    
+            print(f"[Meca500] Moving back up {distance_mm} mm")
+            self.robot.MoveLinRelWrf(0, 0, distance_mm, 0, 0, 0)
+            self.robot.WaitIdle()
+    
+            if self.stepper:
+                self.stepper.stop()
+    
+        except Exception as e:
+            print(f"[Meca500] ERROR: Tap failed — {e}")
+            if self.stepper:
+                self.stepper.stop()
 
 
 
