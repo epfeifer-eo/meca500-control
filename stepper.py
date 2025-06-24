@@ -4,8 +4,11 @@ Created on Thu May 22 14:03:24 2025
 
 @author: elija
 """
-import time
+# stepper.py
+
 import sys
+import time
+import threading
 
 if sys.platform == 'linux':
     from gpiozero import DigitalOutputDevice
@@ -17,37 +20,57 @@ else:
         def close(self): print(f"[Mock] GPIO {self.pin} CLOSED")
 
 
-# Setup pins
-PULSE_PIN = 17
-DIR_PIN = 27
+class Stepper:
+    def __init__(self, pul_pin=17, dir_pin=27, default_speed=600):
+        self.pul = DigitalOutputDevice(pul_pin)
+        self.dir = DigitalOutputDevice(dir_pin)
+        self._running = False
+        self._thread = None
+        self._lock = threading.Lock()
+        self._speed = default_speed  # in steps/sec
 
-pulse = DigitalOutputDevice(PULSE_PIN)
-direction = DigitalOutputDevice(DIR_PIN)
+    def _step_loop(self):
+        while self._running:
+            with self._lock:
+                delay = 1.0 / self._speed
+            self.pul.on()
+            time.sleep(delay / 2)
+            self.pul.off()
+            time.sleep(delay / 2)
 
-# Configurable params
-direction.on()  # FORWARD (use .off() for reverse)
-steps_per_sec = 500  # Try 500–800
-duration_sec = 2  # Run for 2 seconds
+    def forward(self, speed=None):
+        self.dir.on()
+        self._start(speed)
 
-# Calculate delay per step
-delay = 1.0 / steps_per_sec
+    def reverse(self, speed=None):
+        self.dir.off()
+        self._start(speed)
 
-print(f"[Stepper] Running FORWARD at {steps_per_sec} steps/sec for {duration_sec} seconds")
+    def _start(self, speed):
+        self.stop()
+        with self._lock:
+            if speed:
+                self._speed = max(1, speed)
+        self._running = True
+        self._thread = threading.Thread(target=self._step_loop, daemon=True)
+        self._thread.start()
 
-try:
-    start_time = time.time()
-    while time.time() - start_time < duration_sec:
-        pulse.on()
-        time.sleep(delay / 2)
-        pulse.off()
-        time.sleep(delay / 2)
+    def stop(self):
+        if self._running:
+            self._running = False
+            if self._thread:
+                self._thread.join()
+            self.pul.off()
+            self._thread = None
 
-    print("[Stepper] Done. Motor stopped.")
+    def set_speed(self, speed):
+        with self._lock:
+            self._speed = max(1, speed)
 
-finally:
-    pulse.off()
-    direction.off()
-    pulse.close()
-    direction.close()
+    def cleanup(self):
+        self.stop()
+        self.pul.close()
+        self.dir.close()
+
 
 

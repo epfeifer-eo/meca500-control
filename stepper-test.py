@@ -4,61 +4,26 @@ Created on Thu May 29 13:17:00 2025
 
 @author: elija
 """
-# stepper-test.py
 import time
-import sys
+from stepper import Stepper
 
-if sys.platform == 'linux':
-    from gpiozero import DigitalOutputDevice
-else:
-    class DigitalOutputDevice:
-        def __init__(self, pin): self.pin = pin
-        def on(self): print(f"[Mock] GPIO {self.pin} ON")
-        def off(self): print(f"[Mock] GPIO {self.pin} OFF")
-        def close(self): print(f"[Mock] GPIO {self.pin} CLOSED")
+stepper = Stepper()
 
-
-# Pin assignments
-PUL_PIN = 17
-DIR_PIN = 27
-
-# Parameters
-DIRECTION = "forward"  # "forward" or "reverse"
-STEPS_PER_SEC = 600
-RUN_DURATION_SEC = 3
-
-# Setup GPIO pins
-pulse = DigitalOutputDevice(PUL_PIN)
-direction = DigitalOutputDevice(DIR_PIN)
-
-# Set direction
-if DIRECTION == "forward":
-    direction.on()
-else:
-    direction.off()
-
-# Calculate pulse delay
-delay = 1.0 / STEPS_PER_SEC
-print(f"[Test] Direction: {DIRECTION}, Speed: {STEPS_PER_SEC} steps/sec, Duration: {RUN_DURATION_SEC}s")
-
-# Run motor
 try:
-    start_time = time.time()
-    while time.time() - start_time < RUN_DURATION_SEC:
-        pulse.on()
-        time.sleep(delay / 2)
-        pulse.off()
-        time.sleep(delay / 2)
+    print("[Test] Running forward for 2 seconds at 600 steps/sec")
+    stepper.forward(speed=600)
+    time.sleep(2)
 
-    print("[Test] Stepper run complete.")
+    print("[Test] Reversing for 2 seconds at 800 steps/sec")
+    stepper.reverse(speed=800)
+    time.sleep(2)
+
+    print("[Test] Stopping")
+    stepper.stop()
 
 finally:
-    # Cleanup
-    pulse.off()
-    direction.off()
-    pulse.close()
-    direction.close()
-    print("[Test] GPIO cleaned up.")
+    print("[Test] Cleaning up GPIO")
+    stepper.cleanup()
 
 
 
