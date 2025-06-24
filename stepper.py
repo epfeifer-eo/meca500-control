@@ -71,7 +71,7 @@ class Stepper:
             self.set_speed(speed)
         self._start()
     
-    def ramp_to_speed(self, target_speed, ramp_time=1.0, steps=60, async_mode=False):
+    def ramp_to_speed(self, target_speed, ramp_time=1.0, steps=20, async_mode=False):
         """Ramp the speed to a target value. Assumes motor is already running."""
         def ramp():
             with self._lock:
