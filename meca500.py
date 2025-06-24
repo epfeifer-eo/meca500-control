@@ -126,6 +126,7 @@ class Meca500:
             self.robot.MoveLinRelWrf(0, 1, 0, 0, 0, 0)
             self.robot.MoveLinRelWrf(0, -2, 0, 0, 0, 0)
             self.robot.MoveLinRelWrf(0, 1, 0, 0, 0, 0)
+            self.robot.WaitIdle()
             time.sleep(pause_sec/2)
     
             if self.stepper:
