@@ -102,7 +102,7 @@ class Meca500:
                 self.connected = False
                 break
 
-    def tap(self, distance_mm=8, pause_sec=0.5, cart_vel=1, ramp_time=1, target_speed=800):
+    def tap(self, distance_mm=8, pause_sec=0.5, cart_vel=1, ramp_time=2, target_speed=1800):
         """Tap while stepper ramps up during descent and ramps down during ascent."""
         try:
             print(f"[Meca500] Setting Cartesian velocity to {cart_vel} mm/s")
@@ -111,7 +111,7 @@ class Meca500:
             if self.stepper:
                 print("[Meca500] Ramping up while descending")
                 self.stepper.forward()
-                self.stepper.ramp_to_speed_async(target_speed, ramp_time)
+                self.stepper.ramp_to_speed(target_speed, ramp_time, async_mode=True)
     
             print(f"[Meca500] Moving down {distance_mm} mm")
             self.robot.MoveLinRelWrf(0, 0, -distance_mm, 0, 0, 0)
@@ -122,7 +122,7 @@ class Meca500:
     
             if self.stepper:
                 print("[Meca500] Ramping down while ascending")
-                self.stepper.ramp_to_speed_async(0, ramp_time)
+                self.stepper.ramp_to_speed(0, ramp_time, async_mode=True)
     
             print(f"[Meca500] Moving back up {distance_mm} mm")
             self.robot.MoveLinRelWrf(0, 0, distance_mm, 0, 0, 0)

@@ -68,13 +68,26 @@ class Stepper:
     def set_speed(self, speed):
         with self._lock:
             self._speed = max(1, speed)
-            
-    def ramp_to_speed_async(self, target_speed, ramp_time=1.0):
-        def _ramp():
-            self.set_acceleration(ramp_time=ramp_time, target_speed=target_speed)
+
+
+    def ramp_to_speed(self, target_speed, ramp_time=1.0, steps=20, async_mode=False):
+        """
+        Ramp the stepper speed to a target over a given time.
+        If async_mode=True, runs in a background thread.
+        """
+        def ramp():
+            current_speed = self._speed
+            delta = target_speed - current_speed
+            for i in range(1, steps + 1):
+                speed = current_speed + (delta * i / steps)
+                self.set_speed(speed)
+                time.sleep(ramp_time / steps)
     
-        thread = threading.Thread(target=_ramp, daemon=True)
-        thread.start()
+        if async_mode:
+            thread = threading.Thread(target=ramp, daemon=True)
+            thread.start()
+        else:
+            ramp()
 
     def cleanup(self):
         self.stop()
