@@ -38,7 +38,7 @@ class RobotWorker(QThread):
             self.arm.activate_and_home()
             self.message.emit("Running grid routine...")
 
-            self.arm.tap_params = self.tap_params  # Pass GUI tap settings into arm
+            self.arm.tap_params = self.tap_params  
 
             self.arm.grid_from_references(
                 A1=self.A1,

@@ -85,9 +85,10 @@ class Stepper:
     
             for i in range(1, steps + 1):
                 speed = start_speed + (delta * i / steps)
+                print(f"[Ramp] Speed: {speed:.2f}")
                 if target_speed == 0 and speed < 50:
-                    continue  
-                self.set_speed(speed)
+                    speed = 0  
+                self.set_speed(max(1, speed))
                 time.sleep(ramp_time / steps)
     
             if target_speed == 0:
