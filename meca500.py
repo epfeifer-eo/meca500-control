@@ -17,6 +17,7 @@ class Meca500:
         self.robot = Robot()
         self.connected = False
         self.stepper = stepper
+        self.tap_params = {}
 
     def connect(self):
         if not self.connected:
@@ -285,7 +286,7 @@ class Meca500:
     
                 try:
                     self.move_pose(x, y, z_height, alpha, beta, gamma)
-                    if hasattr(self, "tap_params"):
+                    if self.tap_params:
                         self.tap(**self.tap_params)
                     else:
                         self.tap()
