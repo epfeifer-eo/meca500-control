@@ -12,7 +12,7 @@ stepper = Stepper()
 
 # Forward with ramp-up
 stepper.forward()
-stepper.ramp_to_speed(800, ramp_time=1.0)
+#stepper.ramp_to_speed(800, ramp_time=1.0)
 time.sleep(2)
 
 # Stop 
@@ -21,7 +21,7 @@ time.sleep(1)
 
 # Reverse with slow ramp-up
 stepper.reverse()
-stepper.ramp_to_speed(400, ramp_time=2.0)
+#stepper.ramp_to_speed(800, ramp_time=1.0)
 time.sleep(2)
 
 # Stop

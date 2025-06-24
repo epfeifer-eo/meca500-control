@@ -27,7 +27,7 @@ class Stepper:
         self.pul = DigitalOutputDevice(pul_pin)
         self.dir = DigitalOutputDevice(dir_pin)
         self._running = False
-        self._speed = 500  # steps/sec default
+        self._speed = 800  # steps/sec default
         self._lock = threading.Lock()
         self._thread = None
 
