@@ -120,12 +120,12 @@ class Meca500:
     
             print(f"[Meca500] Pausing for {pause_sec} seconds")
             time.sleep(pause_sec/2)
-            self.robot.MoveLinRelWrf(0.1, 0, 0, 0, 0, 0)
-            self.robot.MoveLinRelWrf(-0.2, 0, 0, 0, 0, 0)
-            self.robot.MoveLinRelWrf(0.1, 0, 0, 0, 0, 0)
-            self.robot.MoveLinRelWrf(0, 0.1, 0, 0, 0, 0)
-            self.robot.MoveLinRelWrf(0, -0.2, 0, 0, 0, 0)
-            self.robot.MoveLinRelWrf(0, 0.1, 0, 0, 0, 0)
+            self.robot.MoveLinRelWrf(1, 0, 0, 0, 0, 0)
+            self.robot.MoveLinRelWrf(-2, 0, 0, 0, 0, 0)
+            self.robot.MoveLinRelWrf(1, 0, 0, 0, 0, 0)
+            self.robot.MoveLinRelWrf(0, 1, 0, 0, 0, 0)
+            self.robot.MoveLinRelWrf(0, -2, 0, 0, 0, 0)
+            self.robot.MoveLinRelWrf(0, 1, 0, 0, 0, 0)
             time.sleep(pause_sec/2)
     
             if self.stepper:
