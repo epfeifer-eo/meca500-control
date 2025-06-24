@@ -136,39 +136,6 @@ class Meca500:
             if self.stepper:
                 self.stepper.stop()
 
-
-
-    # def tap(self, distance_mm=8, pause_sec=0.5, cart_vel=1, ramp_time=0.25, target_speed=800):
-    #     """Moves the end effector down and back up, spinning the stepper motor with ramp up/down."""
-    #     try:
-    #         print(f"[Meca500] Setting Cartesian velocity to {cart_vel} mm/s")
-    #         self.robot.SetCartLinVel(cart_vel)
-    
-    #         print(f"[Meca500] Moving down {distance_mm} mm")
-    #         self.robot.MoveLinRelWrf(0, 0, -distance_mm, 0, 0, 0)
-    #         self.robot.WaitIdle()
-    
-    #         if self.stepper:
-    #             print("[Meca500] Ramping up stepper motor")
-    #             self.stepper.forward()
-                
-    
-    #         print(f"[Meca500] Pausing for {pause_sec} seconds")
-    #         time.sleep(pause_sec)
-    
-    #         if self.stepper:
-    #             print("[Meca500] Ramping down and stopping stepper motor")
-    #             self.stepper.stop()
-    
-    #         print(f"[Meca500] Moving back up {distance_mm} mm")
-    #         self.robot.MoveLinRelWrf(0, 0, distance_mm, 0, 0, 0)
-    #         self.robot.WaitIdle()
-    
-    #     except Exception as e:
-    #         print(f"[Meca500] ERROR: Tap-down failed — {e}")
-    #         if self.stepper:
-    #             self.stepper.stop()
-
     
     def nod(self, mode="yes"):
         """
@@ -265,54 +232,6 @@ class Meca500:
                 if run_cleaning:
                     self.clean()
 
-    # def grid_from_references(
-    #     self,
-    #     A1: Tuple[float, float],
-    #     A12: Tuple[float, float],
-    #     H12: Tuple[float, float],
-    #     z_height: float = 308,
-    #     rows: int = 8,
-    #     cols: int = 12,
-    #     angles: Tuple[float, float, float] = (0, 90, 0),
-    #     run_cleaning: bool = True,
-    #     skip_columns: Optional[str] = None,  # 'even', 'odd', or (Default)=None
-    #     safe_pose: Tuple[float, float, float, float, float, float] = (190, 0, 308, 0, 90, 0)
-    # ):
-    #     x0, y0 = A1                 # A1 (tuple): (x, y) coordinates of top-left well (row 0, col 0)
-    #     x1, y1 = A12                # A12 (tuple): (x, y) coordinates of top-right well (row 0, col 11)
-    #     x2, y2 = H12                # H12 (tuple): (x, y) coordinates of bottom-right well (row 7, col 11)
-    #     alpha, beta, gamma = angles
-    
-    #     row_dx = (x1 - x0) / (cols - 1)
-    #     row_dy = (y1 - y0) / (cols - 1)
-    #     col_dx = (x2 - x1) / (rows - 1)
-    #     col_dy = (y2 - y1) / (rows - 1)
-    
-    #     for row in range(rows):
-    #         col_range = range(cols) if row % 2 == 0 else range(cols - 1, -1, -1)
-    
-    #         for col in col_range:
-    #             if skip_columns == 'odd' and col % 2 == 0:
-    #                 continue
-    #             elif skip_columns == 'even' and col % 2 == 1:
-    #                 continue
-    
-    #             x = x0 + col * row_dx + row * col_dx
-    #             y = y0 + col * row_dy + row * col_dy
-    
-    #             print(f"[Meca500] Moving to grid point ({row}, {col}) at ({x:.2f}, {y:.2f}, {z_height})")
-    
-    #             if not self.is_pose_safe(x, y, z_height, alpha, beta, gamma):
-    #                 print("[Meca500] Skipping unsafe pose.")
-    #                 continue
-    
-    #             self.move_pose(x, y, z_height, alpha, beta, gamma)
-    #             self.tap()
-    #             if run_cleaning:
-    #                 self.clean()
-    #     print(f"[Meca500] Returning to safe pose: {safe_pose}")
-    #     self.move_pose(*safe_pose)
-    #     self.move_joints(0, 0, 0, 0, 0, 0)
 
     def grid_from_references(
         self,
@@ -366,7 +285,10 @@ class Meca500:
     
                 try:
                     self.move_pose(x, y, z_height, alpha, beta, gamma)
-                    self.tap()
+                    if hasattr(self, "tap_params"):
+                        self.tap(**self.tap_params)
+                    else:
+                        self.tap()
                     if run_cleaning:
                         self.clean()
                 except Exception as e:
