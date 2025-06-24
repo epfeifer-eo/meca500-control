@@ -101,36 +101,73 @@ class Meca500:
                 print(f"[Meca500] ERROR: Failed to move to pose {pose} — {e}")
                 self.connected = False
                 break
-    def tap(self, distance_mm=8, pause_sec=0.5, cart_vel=1, ramp_time=0.25, target_speed=800):
-        """Moves the end effector down and back up, spinning the stepper motor with ramp up/down."""
-        try:
-            print(f"[Meca500] Setting Cartesian velocity to {cart_vel} mm/s")
-            self.robot.SetCartLinVel(cart_vel)
+
+        def tap(self, distance_mm=8, pause_sec=0.5, cart_vel=1, ramp_time=1, target_speed=800):
+            """Tap while stepper ramps up during descent and ramps down during ascent."""
+            try:
+                print(f"[Meca500] Setting Cartesian velocity to {cart_vel} mm/s")
+                self.robot.SetCartLinVel(cart_vel)
+        
+                if self.stepper:
+                    print("[Meca500] Ramping up while descending")
+                    self.stepper.forward()
+                    self.stepper.ramp_to_speed_async(target_speed, ramp_time)
+        
+                print(f"[Meca500] Moving down {distance_mm} mm")
+                self.robot.MoveLinRelWrf(0, 0, -distance_mm, 0, 0, 0)
+                self.robot.WaitIdle()
+        
+                print(f"[Meca500] Pausing for {pause_sec} seconds")
+                time.sleep(pause_sec)
+        
+                if self.stepper:
+                    print("[Meca500] Ramping down while ascending")
+                    self.stepper.ramp_to_speed_async(0, ramp_time)
+        
+                print(f"[Meca500] Moving back up {distance_mm} mm")
+                self.robot.MoveLinRelWrf(0, 0, distance_mm, 0, 0, 0)
+                self.robot.WaitIdle()
+        
+                if self.stepper:
+                    self.stepper.stop()
+        
+            except Exception as e:
+                print(f"[Meca500] ERROR: Tap failed — {e}")
+                if self.stepper:
+                    self.stepper.stop()
+
+
+
+    # def tap(self, distance_mm=8, pause_sec=0.5, cart_vel=1, ramp_time=0.25, target_speed=800):
+    #     """Moves the end effector down and back up, spinning the stepper motor with ramp up/down."""
+    #     try:
+    #         print(f"[Meca500] Setting Cartesian velocity to {cart_vel} mm/s")
+    #         self.robot.SetCartLinVel(cart_vel)
     
-            print(f"[Meca500] Moving down {distance_mm} mm")
-            self.robot.MoveLinRelWrf(0, 0, -distance_mm, 0, 0, 0)
-            self.robot.WaitIdle()
+    #         print(f"[Meca500] Moving down {distance_mm} mm")
+    #         self.robot.MoveLinRelWrf(0, 0, -distance_mm, 0, 0, 0)
+    #         self.robot.WaitIdle()
     
-            if self.stepper:
-                print("[Meca500] Ramping up stepper motor")
-                self.stepper.forward()
+    #         if self.stepper:
+    #             print("[Meca500] Ramping up stepper motor")
+    #             self.stepper.forward()
                 
     
-            print(f"[Meca500] Pausing for {pause_sec} seconds")
-            time.sleep(pause_sec)
+    #         print(f"[Meca500] Pausing for {pause_sec} seconds")
+    #         time.sleep(pause_sec)
     
-            if self.stepper:
-                print("[Meca500] Ramping down and stopping stepper motor")
-                self.stepper.stop()
+    #         if self.stepper:
+    #             print("[Meca500] Ramping down and stopping stepper motor")
+    #             self.stepper.stop()
     
-            print(f"[Meca500] Moving back up {distance_mm} mm")
-            self.robot.MoveLinRelWrf(0, 0, distance_mm, 0, 0, 0)
-            self.robot.WaitIdle()
+    #         print(f"[Meca500] Moving back up {distance_mm} mm")
+    #         self.robot.MoveLinRelWrf(0, 0, distance_mm, 0, 0, 0)
+    #         self.robot.WaitIdle()
     
-        except Exception as e:
-            print(f"[Meca500] ERROR: Tap-down failed — {e}")
-            if self.stepper:
-                self.stepper.stop()
+    #     except Exception as e:
+    #         print(f"[Meca500] ERROR: Tap-down failed — {e}")
+    #         if self.stepper:
+    #             self.stepper.stop()
 
     
     def nod(self, mode="yes"):

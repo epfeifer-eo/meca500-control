@@ -68,6 +68,13 @@ class Stepper:
     def set_speed(self, speed):
         with self._lock:
             self._speed = max(1, speed)
+            
+    def ramp_to_speed_async(self, target_speed, ramp_time=1.0):
+        def _ramp():
+            self.set_acceleration(ramp_time=ramp_time, target_speed=target_speed)
+    
+        thread = threading.Thread(target=_ramp, daemon=True)
+        thread.start()
 
     def cleanup(self):
         self.stop()
