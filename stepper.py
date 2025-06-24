@@ -4,13 +4,13 @@ Created on Thu May 22 14:03:24 2025
 
 @author: elija
 """
-
 import sys
+import time
+import threading
 
 if sys.platform == 'linux':
     from gpiozero import DigitalOutputDevice
 else:
-    # Dummy fallback classes for non-RPi environments
     class DigitalOutputDevice:
         def __init__(self, pin):
             self.pin = pin
@@ -18,86 +18,71 @@ else:
             print(f"[Mock] GPIO {self.pin} ON")
         def off(self):
             print(f"[Mock] GPIO {self.pin} OFF")
+        def close(self):
+            print(f"[Mock] GPIO {self.pin} CLOSED")
 
-import time
-import threading
-# from gpiozero import DigitalOutputDevice
 
 class Stepper:
-    def __init__(self, pul_pin=17, dir_pin=27, step_delay=0.001):
+    def __init__(self, pul_pin=17, dir_pin=27):
         self.pul = DigitalOutputDevice(pul_pin)
         self.dir = DigitalOutputDevice(dir_pin)
-        self.running = False
-        self.step_delay = step_delay  # Seconds between steps
+        self._running = False
+        self._speed = 500  # steps/sec default
         self._lock = threading.Lock()
         self._thread = None
 
-    def _step_loop(self):
-        while self.running:
+    def _pulse_loop(self):
+        print("[Stepper] Step loop started")
+        while self._running:
+            with self._lock:
+                delay = 1.0 / self._speed if self._speed > 0 else 0.01
             self.pul.on()
-            time.sleep(self.step_delay / 2)
+            time.sleep(delay / 2)
             self.pul.off()
-            time.sleep(self.step_delay / 2)
+            time.sleep(delay / 2)
+        print("[Stepper] Step loop exited")
 
-    def _start(self):
-        with self._lock:
-            if not self.running:
-                self.running = True
-                self._thread = threading.Thread(target=self._step_loop, daemon=True)
-                self._thread.start()
+    def _start_loop(self):
+        if self._thread and self._thread.is_alive():
+            return
+        self._running = True
+        self._thread = threading.Thread(target=self._pulse_loop, daemon=True)
+        self._thread.start()
 
     def forward(self):
-        print("[Stepper] Moving forward")
+        print("[Stepper] Direction: FORWARD")
         self.dir.on()
-        self._start()
+        self._start_loop()
 
     def reverse(self):
-        print("[Stepper] Moving reverse")
+        print("[Stepper] Direction: REVERSE")
         self.dir.off()
-        self._start()
+        self._start_loop()
 
     def stop(self):
-        print("[Stepper] Stopping")
-        with self._lock:
-            self.running = False
+        print("[Stepper] STOP")
+        self._running = False
         if self._thread:
             self._thread.join()
-            self._thread = None
+        self._thread = None
 
     def set_speed(self, steps_per_sec):
-        """
-        Sets stepper speed. Higher is faster.
-        """
-        if steps_per_sec <= 0:
-            self.step_delay = None
-            print("[Stepper] Speed set to 0 (stopped)")
-            return
-        self.step_delay = 1.0 / steps_per_sec
-        print(f"[Stepper] Speed set to {steps_per_sec} steps/sec")
+        with self._lock:
+            self._speed = max(1, steps_per_sec)
+            print(f"[Stepper] Speed set to {self._speed} steps/sec")
 
-
-    def set_acceleration(self, ramp_time=1.0, target_speed=500):
-        """
-        Gradually increases speed over ramp_time (in seconds).
-        """
-        print(f"[Stepper] Ramping up to {target_speed} steps/sec over {ramp_time}s")
-    
-        if target_speed <= 0:
-            self.stop()
-            return
-        
-        self.forward()
-        
+    def ramp_to_speed(self, target_speed, ramp_time=1.0):
+        print(f"[Stepper] Ramping to {target_speed} steps/sec over {ramp_time}s")
         steps = 20
+        interval = ramp_time / steps
         for i in range(1, steps + 1):
-            speed = (target_speed / steps) * i
+            speed = int((target_speed / steps) * i)
             self.set_speed(speed)
-            time.sleep(ramp_time / steps)
-
+            time.sleep(interval)
 
     def cleanup(self):
-        print("[Stepper] Cleaning up GPIO")
         self.stop()
         self.pul.close()
         self.dir.close()
+        print("[Stepper] Cleanup complete")
 

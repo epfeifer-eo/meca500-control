@@ -5,16 +5,30 @@ Created on Thu May 29 13:17:00 2025
 @author: elija
 """
 
-
-import time
 from stepper import Stepper
+import time
 
 stepper = Stepper()
+
+# Forward with ramp-up
 stepper.forward()
-stepper.set_acceleration(ramp_time=0.5, target_speed=1000)
-time.sleep(1)
-stepper.set_acceleration(ramp_time=0.5, target_speed=0)
+stepper.ramp_to_speed(800, ramp_time=1.0)
+time.sleep(2)
+
+# Stop 
 stepper.stop()
+time.sleep(1)
+
+# Reverse with slow ramp-up
+stepper.reverse()
+stepper.ramp_to_speed(400, ramp_time=2.0)
+time.sleep(2)
+
+# Stop
+stepper.stop()
+
+stepper.cleanup()
+
 
 
 # def main():
