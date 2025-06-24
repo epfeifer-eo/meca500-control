@@ -4,30 +4,87 @@ Created on Thu May 29 13:17:00 2025
 
 @author: elija
 """
-
-from stepper import Stepper
+# stepper-test.py
 import time
+import sys
 
-stepper = Stepper()
+if sys.platform == 'linux':
+    from gpiozero import DigitalOutputDevice
+else:
+    class DigitalOutputDevice:
+        def __init__(self, pin): self.pin = pin
+        def on(self): print(f"[Mock] GPIO {self.pin} ON")
+        def off(self): print(f"[Mock] GPIO {self.pin} OFF")
+        def close(self): print(f"[Mock] GPIO {self.pin} CLOSED")
 
-# Forward with ramp-up
-stepper.forward()
-#stepper.ramp_to_speed(800, ramp_time=1.0)
-time.sleep(2)
 
-# Stop 
-stepper.stop()
-time.sleep(1)
+# Pin assignments
+PUL_PIN = 17
+DIR_PIN = 27
 
-# Reverse with slow ramp-up
-stepper.reverse()
-#stepper.ramp_to_speed(800, ramp_time=1.0)
-time.sleep(2)
+# Parameters
+DIRECTION = "forward"  # "forward" or "reverse"
+STEPS_PER_SEC = 600
+RUN_DURATION_SEC = 3
 
-# Stop
-stepper.stop()
+# Setup GPIO pins
+pulse = DigitalOutputDevice(PUL_PIN)
+direction = DigitalOutputDevice(DIR_PIN)
 
-stepper.cleanup()
+# Set direction
+if DIRECTION == "forward":
+    direction.on()
+else:
+    direction.off()
+
+# Calculate pulse delay
+delay = 1.0 / STEPS_PER_SEC
+print(f"[Test] Direction: {DIRECTION}, Speed: {STEPS_PER_SEC} steps/sec, Duration: {RUN_DURATION_SEC}s")
+
+# Run motor
+try:
+    start_time = time.time()
+    while time.time() - start_time < RUN_DURATION_SEC:
+        pulse.on()
+        time.sleep(delay / 2)
+        pulse.off()
+        time.sleep(delay / 2)
+
+    print("[Test] Stepper run complete.")
+
+finally:
+    # Cleanup
+    pulse.off()
+    direction.off()
+    pulse.close()
+    direction.close()
+    print("[Test] GPIO cleaned up.")
+
+
+
+# from stepper import Stepper
+# import time
+
+# stepper = Stepper()
+
+# # Forward with ramp-up
+# stepper.forward()
+# #stepper.ramp_to_speed(800, ramp_time=1.0)
+# time.sleep(2)
+
+# # Stop 
+# stepper.stop()
+# time.sleep(1)
+
+# # Reverse with slow ramp-up
+# stepper.reverse()
+# #stepper.ramp_to_speed(800, ramp_time=1.0)
+# time.sleep(2)
+
+# # Stop
+# stepper.stop()
+
+# stepper.cleanup()
 
 
 
