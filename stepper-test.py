@@ -11,7 +11,7 @@ stepper = Stepper()
 
 try:
     print("[Test] Running forward for 2 seconds at 600 steps/sec")
-    stepper.forward(speed=600)
+    stepper.forward(speed=1800)
     time.sleep(2)
 
     print("[Test] Reversing for 2 seconds at 800 steps/sec")
