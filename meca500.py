@@ -146,12 +146,16 @@ class Meca500:
             ]
     
             for dx, dy in path:
-                self.robot.MoveLinRelWrf(dx, dy, 0, 0, 0, 0)
-                self.robot.WaitIdle()
+                cmd = f"MoveLinRelWrf({dx:.3f},{dy:.3f},0,0,0,0)"
+                self.robot.SendCustomCommand(cmd)
+                # self.robot.MoveLinRelWrf(dx, dy, 0, 0, 0, 0)
+                # self.robot.WaitIdle()
             for dx, dy in reversed(path):
-                self.robot.MoveLinRelWrf(-dx, -dy, 0, 0, 0, 0)
-                self.robot.WaitIdle()
-    
+                cmd = f"MoveLinRelWrf({-dx:.3f},{-dy:.3f},0,0,0,0)"
+                self.robot.SendCustomCommand(cmd)
+                # self.robot.MoveLinRelWrf(-dx, -dy, 0, 0, 0, 0)
+                # self.robot.WaitIdle()
+            self.robot.WaitIdle()
             time.sleep(pause_sec / 2)
     
             # === ASCEND + ramp-down at the same time ===
