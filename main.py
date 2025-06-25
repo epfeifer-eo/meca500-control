@@ -4,7 +4,7 @@ Created on Thu May 22 14:02:56 2025
 
 @author: elija
 """
-
+#by "main" I actually mean "generic testing"
 # import time
 from meca500 import Meca500
 

@@ -25,7 +25,8 @@ class Meca500:
             self.robot.Connect(self.ip)
             self.connected = True
             print("[Meca500] Connected.")
-
+    
+    #It is critical that you call this after connecting to the arm
     def activate_and_home(self):
         if not self.connected:
             raise RuntimeError("Robot not connected. Call connect() first.")
@@ -36,7 +37,8 @@ class Meca500:
         print("[Meca500] Homing robot...")
         self.robot.Home()
         self.robot.WaitIdle(timeout=30)
-        
+    
+    #This and set_cart_vel can be used initially to set a base or called upon in other methods   
     def set_joint_vel(self, deg_per_sec):
         print(f"[Meca500] Setting joint velocity: {deg_per_sec} deg/s")
         self.robot.SetJointVel(deg_per_sec)
@@ -44,7 +46,13 @@ class Meca500:
     def set_cart_vel(self, mm_per_sec):
         print(f"[Meca500] Setting Cartesian velocity: {mm_per_sec} mm/s")
         self.robot.SetCartLinVel(mm_per_sec)
-
+    
+    
+    """
+    This is a user defined safety check, I highly reccomend you log into the mecademic portal to move the arm around and find these values.
+    Just put the robots ip into a web browser with the arm connected to the laptop over ethernet. 
+    Default ip is 192.168.0.100 and make sure your computer has a static ip on the same network as the arm.
+    """
     def is_pose_safe(self, x, y, z, alpha=0, beta=0, gamma=0):
         """Check if a pose is probably within reach."""
         #TODO: update this
@@ -55,7 +63,9 @@ class Meca500:
         )
         return in_bounds
 
-
+    """
+    Move_pose vs Move_joints are different see: https://resources.mecademic.com/en/doc/latest/Meca500/MC-PM-MECA500/motion_commands/index.html
+    """
     def move_pose(self, x, y, z, alpha, beta, gamma):
         if not self.connected:
             raise RuntimeError("Robot not connected. Call connect() first.")
@@ -145,7 +155,7 @@ class Meca500:
 
             if self.stepper:
                 def delayed_ramp_down():
-                    time.sleep(0.05)  # Small delay to ensure robot starts moving
+                    time.sleep(0.05)  
                     print("[Meca500] Ramping down while ascending")
                     self.stepper.ramp_to_speed(0, (2 * ramp_time), async_mode=True)
             
@@ -162,7 +172,7 @@ class Meca500:
             if self.stepper:
                 self.stepper.stop()
 
-    
+    #This was me learning how to move the arm and so that I could have it tell Mike yes or no when he came to my door
     def nod(self, mode="yes"):
         """
         Perform a cheeky nod gesture. 
@@ -191,7 +201,7 @@ class Meca500:
             self.move_joints(-45, -20, -20, 0, 35, 0)
     
         else:
-            print(f"[Meca500] Unknown nod mode: {mode}. Use 'yes' or 'no'.")
+            print(f"[Meca500] There is no {mode}. Use 'yes' or 'no'.")
             return
     
         # Return to base
@@ -213,6 +223,8 @@ class Meca500:
         # self.robot.MoveLinRelWrf(0, -10, 0, 0, 0, 0)  # small wipe left
         # self.robot.WaitIdle()
 
+
+    #DONT use this grid, it will have compounding errors from localizing off just a single point
     def grid(
         self,
         origin=(100, -50),
@@ -258,7 +270,8 @@ class Meca500:
                 if run_cleaning:
                     self.clean()
 
-
+    
+    #This is the correct grid function, it extrapolates vectors from the 3 given points 
     def grid_from_references(
         self,
         A1: Tuple[float, float],
@@ -335,6 +348,8 @@ class Meca500:
         except Exception as e:
             print(f"[Meca500] ERROR: Could not return to safe pose — {e}")
 
+
+    #I never actually tested this, proceed with caution
     def abort_and_recover(self, safe_pose=(190, 0, 308, 0, 90, 0)):
         print("[Meca500] Aborting and recovering...")
     
@@ -361,7 +376,7 @@ class Meca500:
         except Exception as e:
             print(f"[Meca500] Recovery move failed — {e}")
 
-
+    #Self explanatory 
     def disconnect(self):
         if self.connected:
             print("[Meca500] Disconnecting...")

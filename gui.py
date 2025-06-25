@@ -1,3 +1,14 @@
+"""
+This is the file you are looking for. If on my pc and in the correct directory run: 
+>poetry shell
+>python gui.py
+
+If on rpi5 navigate to the root directory:
+>source venv/bin/activate
+>python gui.py 
+
+"""
+
 import sys
 import threading
 import json
@@ -319,8 +330,9 @@ if __name__ == "__main__":
     sys.exit(app.exec_())
 
 
-
-# # -*- coding: utf-8 -*-
+#I am aware that git has version control but copy/paste and commenting out the old allowed me to see my old stuff incase I broke something
+#Good for reference but dont uncomment it.
+# -*- coding: utf-8 -*-
 # """
 # Created on Wed Jun 18 10:59:29 2025
 
