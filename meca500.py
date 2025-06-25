@@ -150,16 +150,25 @@ class Meca500:
                 self.robot.MoveLinRelWrf(-dx, -dy, 0, 0, 0, 0)
     
             time.sleep(pause_sec / 2)
-    
+            
+            print(f"[Meca500] Moving back up {distance_mm} mm")
+
+            self.robot.MoveLinRelWrf(0, 0, distance_mm, 0, 0, 0)
+            
             if self.stepper:
-                print("[Meca500] Waiting for ramp-up to finish before ramping down")
-                self.stepper.wait_for_ramp()
                 print("[Meca500] Ramping down while ascending")
                 self.stepper.ramp_to_speed(0, (2 * ramp_time), async_mode=True)
-    
-            print(f"[Meca500] Moving back up {distance_mm} mm")
-            self.robot.MoveLinRelWrf(0, 0, distance_mm, 0, 0, 0)
+            
             self.robot.WaitIdle()
+            # if self.stepper:
+            #     print("[Meca500] Waiting for ramp-up to finish before ramping down")
+            #     self.stepper.wait_for_ramp()
+            #     print("[Meca500] Ramping down while ascending")
+            #     self.stepper.ramp_to_speed(0, (2 * ramp_time), async_mode=True)
+    
+            # print(f"[Meca500] Moving back up {distance_mm} mm")
+            # self.robot.MoveLinRelWrf(0, 0, distance_mm, 0, 0, 0)
+            # self.robot.WaitIdle()
     
             if self.stepper:
                 self.stepper.stop()
