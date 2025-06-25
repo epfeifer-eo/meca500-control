@@ -147,8 +147,10 @@ class Meca500:
     
             for dx, dy in path:
                 self.robot.MoveLinRelWrf(dx, dy, 0, 0, 0, 0)
+                self.robot.WaitIdle()
             for dx, dy in reversed(path):
                 self.robot.MoveLinRelWrf(-dx, -dy, 0, 0, 0, 0)
+                self.robot.WaitIdle()
     
             time.sleep(pause_sec / 2)
     
