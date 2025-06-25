@@ -131,7 +131,11 @@ class Meca500:
             self.robot.WaitIdle()
     
             time.sleep(pause_sec / 2)
-    
+            
+            if self.stepper:
+                print("[Meca500] holding speed")
+                self.stepper.reverse(speed=target_speed)
+            
             print(f"[Meca500] Drawing circle pattern at bottom (radius={circle_radius} mm)")
             import math
             path = []
