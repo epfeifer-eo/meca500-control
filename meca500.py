@@ -116,63 +116,53 @@ class Meca500:
     def tap(self,
              distance_mm=8, pause_sec=0.5, cart_vel=5, ramp_time=1.5,
              target_speed=26000, circle_radius=0.5, circle_points=12):
-        """Tap while stepper ramps up during descent and ramps down during ascent."""
+        """Tap while stepper ramps up/down concurrently with Z motion."""
         try:
+            import math
             print(f"[Meca500] Setting Cartesian velocity to {cart_vel} mm/s")
             self.robot.SetCartLinVel(cart_vel)
     
-            if self.stepper:
-                print("[Meca500] Ramping up while descending")
-                self.stepper.reverse(speed=50)
-                self.stepper.ramp_to_speed(target_speed, ramp_time, async_mode=True)
+            # === DESCEND + ramp-up at the same time ===
+            print(f"[Meca500] Moving down {distance_mm} mm and ramping up stepper")
     
-            print(f"[Meca500] Moving down {distance_mm} mm")
+            if self.stepper:
+                self.stepper.reverse(speed=50)
+                threading.Thread(
+                    target=lambda: self.stepper.ramp_to_speed(target_speed, ramp_time, async_mode=False),
+                    daemon=True
+                ).start()
+    
             self.robot.MoveLinRelWrf(0, 0, -distance_mm, 0, 0, 0)
             self.robot.WaitIdle()
     
             time.sleep(pause_sec / 2)
-            
-            if self.stepper:
-                print("[Meca500] holding speed")
-                self.stepper.reverse(speed=target_speed)
-            
-            print(f"[Meca500] Drawing circle pattern at bottom (radius={circle_radius} mm)")
-            import math
-            path = []
-            for i in range(circle_points):
-                angle = 2 * math.pi * i / circle_points
-                dx = circle_radius * math.cos(angle)
-                dy = circle_radius * math.sin(angle)
-                path.append((dx, dy))
     
-            # Draw circle
+            # === Circle motion ===
+            print(f"[Meca500] Drawing circle pattern (radius={circle_radius}, points={circle_points})")
+            path = [
+                (circle_radius * math.cos(2 * math.pi * i / circle_points),
+                 circle_radius * math.sin(2 * math.pi * i / circle_points))
+                for i in range(circle_points)
+            ]
+    
             for dx, dy in path:
                 self.robot.MoveLinRelWrf(dx, dy, 0, 0, 0, 0)
-    
-            # Return to center
             for dx, dy in reversed(path):
                 self.robot.MoveLinRelWrf(-dx, -dy, 0, 0, 0, 0)
     
             time.sleep(pause_sec / 2)
-            
-            print(f"[Meca500] Moving back up {distance_mm} mm")
-
-            self.robot.MoveLinRelWrf(0, 0, distance_mm, 0, 0, 0)
-            
-            if self.stepper:
-                print("[Meca500] Ramping down while ascending")
-                self.stepper.ramp_to_speed(0, (2 * ramp_time), async_mode=True)
-            
-            self.robot.WaitIdle()
-            # if self.stepper:
-            #     print("[Meca500] Waiting for ramp-up to finish before ramping down")
-            #     self.stepper.wait_for_ramp()
-            #     print("[Meca500] Ramping down while ascending")
-            #     self.stepper.ramp_to_speed(0, (2 * ramp_time), async_mode=True)
     
-            # print(f"[Meca500] Moving back up {distance_mm} mm")
-            # self.robot.MoveLinRelWrf(0, 0, distance_mm, 0, 0, 0)
-            # self.robot.WaitIdle()
+            # === ASCEND + ramp-down at the same time ===
+            print(f"[Meca500] Moving up {distance_mm} mm and ramping down stepper")
+    
+            if self.stepper:
+                threading.Thread(
+                    target=lambda: self.stepper.ramp_to_speed(0, 2 * ramp_time, async_mode=False),
+                    daemon=True
+                ).start()
+    
+            self.robot.MoveLinRelWrf(0, 0, distance_mm, 0, 0, 0)
+            self.robot.WaitIdle()
     
             if self.stepper:
                 self.stepper.stop()
@@ -181,6 +171,8 @@ class Meca500:
             print(f"[Meca500] ERROR: Tap failed — {e}")
             if self.stepper:
                 self.stepper.stop()
+
+            
 
 
     # def tap(self,
