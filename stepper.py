@@ -28,6 +28,7 @@ class Stepper:
         self._thread = None
         self._lock = threading.Lock()
         self._speed = default_speed  # in steps/sec
+        self._ramp_thread = None
 
     def _step_loop(self):
         while self._running:
@@ -96,9 +97,16 @@ class Stepper:
     
         if async_mode:
             thread = threading.Thread(target=ramp, daemon=True)
+            self._ramp_thread = thread
             thread.start()
         else:
             ramp()
+
+    def wait_for_ramp(self):
+            """Wait for any active ramp thread to finish."""
+            if self._ramp_thread:
+                self._ramp_thread.join()
+                self._ramp_thread = None
 
     def cleanup(self):
         self.stop()

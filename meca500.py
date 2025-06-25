@@ -114,8 +114,8 @@ class Meca500:
                 break
 
     def tap(self,
-            distance_mm=8, pause_sec=0.5, cart_vel=5, ramp_time=1.5,
-            target_speed=26000, circle_radius=0.5, circle_points=12):
+             distance_mm=8, pause_sec=0.5, cart_vel=5, ramp_time=1.5,
+             target_speed=26000, circle_radius=0.5, circle_points=12):
         """Tap while stepper ramps up during descent and ramps down during ascent."""
         try:
             print(f"[Meca500] Setting Cartesian velocity to {cart_vel} mm/s")
@@ -129,9 +129,9 @@ class Meca500:
             print(f"[Meca500] Moving down {distance_mm} mm")
             self.robot.MoveLinRelWrf(0, 0, -distance_mm, 0, 0, 0)
             self.robot.WaitIdle()
-            
+    
             time.sleep(pause_sec / 2)
-
+    
             print(f"[Meca500] Drawing circle pattern at bottom (radius={circle_radius} mm)")
             import math
             path = []
@@ -145,22 +145,19 @@ class Meca500:
             for dx, dy in path:
                 self.robot.MoveLinRelWrf(dx, dy, 0, 0, 0, 0)
     
-            # Return to center (reverse the path)
+            # Return to center
             for dx, dy in reversed(path):
                 self.robot.MoveLinRelWrf(-dx, -dy, 0, 0, 0, 0)
     
             time.sleep(pause_sec / 2)
     
-            print(f"[Meca500] Moving back up {distance_mm} mm")
-
             if self.stepper:
-                def delayed_ramp_down():
-                    time.sleep(0.05)  
-                    print("[Meca500] Ramping down while ascending")
-                    self.stepper.ramp_to_speed(0, (2 * ramp_time), async_mode=True)
-            
-                threading.Thread(target=delayed_ramp_down, daemon=True).start()
-            
+                print("[Meca500] Waiting for ramp-up to finish before ramping down")
+                self.stepper.wait_for_ramp()
+                print("[Meca500] Ramping down while ascending")
+                self.stepper.ramp_to_speed(0, (2 * ramp_time), async_mode=True)
+    
+            print(f"[Meca500] Moving back up {distance_mm} mm")
             self.robot.MoveLinRelWrf(0, 0, distance_mm, 0, 0, 0)
             self.robot.WaitIdle()
     
@@ -171,6 +168,66 @@ class Meca500:
             print(f"[Meca500] ERROR: Tap failed — {e}")
             if self.stepper:
                 self.stepper.stop()
+
+
+    # def tap(self,
+    #         distance_mm=8, pause_sec=0.5, cart_vel=5, ramp_time=1.5,
+    #         target_speed=26000, circle_radius=0.5, circle_points=12):
+    #     """Tap while stepper ramps up during descent and ramps down during ascent."""
+    #     try:
+    #         print(f"[Meca500] Setting Cartesian velocity to {cart_vel} mm/s")
+    #         self.robot.SetCartLinVel(cart_vel)
+    
+    #         if self.stepper:
+    #             print("[Meca500] Ramping up while descending")
+    #             self.stepper.reverse(speed=50)
+    #             self.stepper.ramp_to_speed(target_speed, ramp_time, async_mode=True)
+    
+    #         print(f"[Meca500] Moving down {distance_mm} mm")
+    #         self.robot.MoveLinRelWrf(0, 0, -distance_mm, 0, 0, 0)
+    #         self.robot.WaitIdle()
+            
+    #         time.sleep(pause_sec / 2)
+
+    #         print(f"[Meca500] Drawing circle pattern at bottom (radius={circle_radius} mm)")
+    #         import math
+    #         path = []
+    #         for i in range(circle_points):
+    #             angle = 2 * math.pi * i / circle_points
+    #             dx = circle_radius * math.cos(angle)
+    #             dy = circle_radius * math.sin(angle)
+    #             path.append((dx, dy))
+    
+    #         # Draw circle
+    #         for dx, dy in path:
+    #             self.robot.MoveLinRelWrf(dx, dy, 0, 0, 0, 0)
+    
+    #         # Return to center (reverse the path)
+    #         for dx, dy in reversed(path):
+    #             self.robot.MoveLinRelWrf(-dx, -dy, 0, 0, 0, 0)
+    
+    #         time.sleep(pause_sec / 2)
+    
+    #         print(f"[Meca500] Moving back up {distance_mm} mm")
+
+    #         if self.stepper:
+    #             def delayed_ramp_down():
+    #                 time.sleep(0.05)  
+    #                 print("[Meca500] Ramping down while ascending")
+    #                 self.stepper.ramp_to_speed(0, (2 * ramp_time), async_mode=True)
+            
+    #             threading.Thread(target=delayed_ramp_down, daemon=True).start()
+            
+    #         self.robot.MoveLinRelWrf(0, 0, distance_mm, 0, 0, 0)
+    #         self.robot.WaitIdle()
+    
+    #         if self.stepper:
+    #             self.stepper.stop()
+    
+    #     except Exception as e:
+    #         print(f"[Meca500] ERROR: Tap failed — {e}")
+    #         if self.stepper:
+    #             self.stepper.stop()
 
     #This was me learning how to move the arm and so that I could have it tell Mike yes or no when he came to my door
     def nod(self, mode="yes"):
