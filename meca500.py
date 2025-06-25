@@ -115,7 +115,7 @@ class Meca500:
 
     def tap(self,
              distance_mm=8, pause_sec=0.5, cart_vel=5, ramp_time=1.5,
-             target_speed=26000, circle_radius=0.6):
+             target_speed=26000, circle_radius=1):
         """Tap while stepper ramps up/down concurrently with Z motion."""
         try:
             #import math
