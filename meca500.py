@@ -115,10 +115,10 @@ class Meca500:
 
     def tap(self,
              distance_mm=8, pause_sec=0.5, cart_vel=5, ramp_time=1.5,
-             target_speed=26000, circle_radius=0.5, circle_points=12):
+             target_speed=26000, circle_radius=0.5):
         """Tap while stepper ramps up/down concurrently with Z motion."""
         try:
-            import math
+            #import math
             print(f"[Meca500] Setting Cartesian velocity to {cart_vel} mm/s")
             self.robot.SetCartLinVel(cart_vel)
     
@@ -136,7 +136,39 @@ class Meca500:
             self.robot.WaitIdle()
     
             time.sleep(pause_sec / 2)
-    
+            
+            # === Spiral from edge inward ===
+            print(f"[Meca500] Performing inward spiral (radius={circle_radius}, turns=1.5)")
+            
+            from math import pi, cos, sin
+            
+            spiral_points = []
+            turns = 1.5  # full rotations
+            total_points = 40  # more = smoother
+            
+            for i in range(total_points):
+                t = i / (total_points - 1)
+                radius = circle_radius * (1 - t)
+                angle = turns * 2 * pi * t
+                dx = radius * cos(angle)
+                dy = radius * sin(angle)
+                spiral_points.append((dx, dy))
+            
+            # Move from center to spiral start point
+            first_dx, first_dy = spiral_points[0]
+            cmd = f"MoveLinRelWrf({first_dx:.3f},{first_dy:.3f},0,0,0,0)"
+            self.robot.SendCustomCommand(cmd)
+            
+            # Perform spiral
+            for dx, dy in spiral_points:
+                cmd = f"MoveLinRelWrf({dx - first_dx:.3f},{dy - first_dy:.3f},0,0,0,0)"
+                self.robot.SendCustomCommand(cmd)
+                first_dx, first_dy = dx, dy
+            
+            self.robot.WaitIdle()
+
+            
+            """
             # === Circle motion ===
             print(f"[Meca500] Drawing circle pattern (radius={circle_radius}, points={circle_points})")
             path = [
@@ -156,6 +188,7 @@ class Meca500:
                 # self.robot.MoveLinRelWrf(-dx, -dy, 0, 0, 0, 0)
                 # self.robot.WaitIdle()
             self.robot.WaitIdle()
+            """
             time.sleep(pause_sec / 2)
     
             # === ASCEND + ramp-down at the same time ===
