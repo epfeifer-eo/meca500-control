@@ -26,7 +26,7 @@ class Meca500:
             self.connected = True
             print("[Meca500] Connected.")
     
-    #It is critical that you call this after connecting to the arm
+    """It is critical that you call this after connecting to the arm"""
     def activate_and_home(self):
         if not self.connected:
             raise RuntimeError("Robot not connected. Call connect() first.")
@@ -38,7 +38,7 @@ class Meca500:
         self.robot.Home()
         self.robot.WaitIdle(timeout=30)
     
-    #This and set_cart_vel can be used initially to set a base or called upon in other methods   
+    """This and set_cart_vel can be used initially to set a base or called upon in other methods"""   
     def set_joint_vel(self, deg_per_sec):
         print(f"[Meca500] Setting joint velocity: {deg_per_sec} deg/s")
         self.robot.SetJointVel(deg_per_sec)
@@ -52,6 +52,7 @@ class Meca500:
     This is a user defined safety check, I highly reccomend you log into the mecademic portal to move the arm around and find these values.
     Just put the robots ip into a web browser with the arm connected to the laptop over ethernet. 
     Default ip is 192.168.0.100 and make sure your computer has a static ip on the same network as the arm.
+    Note that this does not check for singularities, it is simply a boundary so that you dont slam the tool into something.
     """
     def is_pose_safe(self, x, y, z, alpha=0, beta=0, gamma=0):
         """Check if a pose is probably within reach."""
@@ -122,7 +123,7 @@ class Meca500:
             print(f"[Meca500] Setting Cartesian velocity to {cart_vel} mm/s")
             self.robot.SetCartLinVel(cart_vel)
     
-            # === DESCEND + ramp-up at the same time ===
+            # DESCEND + ramp-up at the same time
             print(f"[Meca500] Moving down {distance_mm} mm and ramping up stepper")
     
             if self.stepper:
@@ -137,7 +138,7 @@ class Meca500:
     
             time.sleep(pause_sec / 2)
             
-            # === Spiral from edge inward ===
+            # Spiral from edge inward
             print(f"[Meca500] Performing inward spiral (radius={circle_radius}, turns=1.5)")
             
             from math import pi, cos, sin
@@ -168,30 +169,30 @@ class Meca500:
             self.robot.WaitIdle()
 
             
-            """
-            # === Circle motion ===
-            print(f"[Meca500] Drawing circle pattern (radius={circle_radius}, points={circle_points})")
-            path = [
-                (circle_radius * math.cos(2 * math.pi * i / circle_points),
-                 circle_radius * math.sin(2 * math.pi * i / circle_points))
-                for i in range(circle_points)
-            ]
+            
+            # Circle motion 
+            # print(f"[Meca500] Drawing circle pattern (radius={circle_radius}, points={circle_points})")
+            # path = [
+            #     (circle_radius * math.cos(2 * math.pi * i / circle_points),
+            #      circle_radius * math.sin(2 * math.pi * i / circle_points))
+            #     for i in range(circle_points)
+            # ]
     
-            for dx, dy in path:
-                cmd = f"MoveLinRelWrf({dx:.3f},{dy:.3f},0,0,0,0)"
-                self.robot.SendCustomCommand(cmd)
-                # self.robot.MoveLinRelWrf(dx, dy, 0, 0, 0, 0)
-                # self.robot.WaitIdle()
-            for dx, dy in reversed(path):
-                cmd = f"MoveLinRelWrf({-dx:.3f},{-dy:.3f},0,0,0,0)"
-                self.robot.SendCustomCommand(cmd)
-                # self.robot.MoveLinRelWrf(-dx, -dy, 0, 0, 0, 0)
-                # self.robot.WaitIdle()
-            self.robot.WaitIdle()
-            """
+            # for dx, dy in path:
+            #     cmd = f"MoveLinRelWrf({dx:.3f},{dy:.3f},0,0,0,0)"
+            #     self.robot.SendCustomCommand(cmd)
+            #     # self.robot.MoveLinRelWrf(dx, dy, 0, 0, 0, 0)
+            #     # self.robot.WaitIdle()
+            # for dx, dy in reversed(path):
+            #     cmd = f"MoveLinRelWrf({-dx:.3f},{-dy:.3f},0,0,0,0)"
+            #     self.robot.SendCustomCommand(cmd)
+            #     # self.robot.MoveLinRelWrf(-dx, -dy, 0, 0, 0, 0)
+            #     # self.robot.WaitIdle()
+            # self.robot.WaitIdle()
+            
             time.sleep(pause_sec / 2)
     
-            # === ASCEND + ramp-down at the same time ===
+            # ASCEND + ramp-down at the same time
             print(f"[Meca500] Moving up {distance_mm} mm and ramping down stepper")
     
             if self.stepper:
@@ -213,7 +214,7 @@ class Meca500:
 
             
 
-
+    # OLD tap method
     # def tap(self,
     #         distance_mm=8, pause_sec=0.5, cart_vel=5, ramp_time=1.5,
     #         target_speed=26000, circle_radius=0.5, circle_points=12):
@@ -273,7 +274,7 @@ class Meca500:
     #         if self.stepper:
     #             self.stepper.stop()
 
-    #This was me learning how to move the arm and so that I could have it tell Mike yes or no when he came to my door
+    #This was me learning how to move the arm and so that I could have the arm tell Mike yes or no when he came to my door
     def nod(self, mode="yes"):
         """
         Perform a cheeky nod gesture. 
@@ -325,7 +326,7 @@ class Meca500:
         # self.robot.WaitIdle()
 
 
-    #DONT use this grid, it will have compounding errors from localizing off just a single point
+    #DO NOT use this grid, it will have compounding errors from localizing off just a single point
     def grid(
         self,
         origin=(100, -50),
@@ -372,7 +373,7 @@ class Meca500:
                     self.clean()
 
     
-    #This is the correct grid function, it extrapolates vectors from the 3 given points 
+    #This is the correct grid function, it extrapolates vectors from the 3 given points A1, A12, and H12 with A1 being close right well from arm's perspective
     def grid_from_references(
         self,
         A1: Tuple[float, float],
@@ -450,7 +451,7 @@ class Meca500:
             print(f"[Meca500] ERROR: Could not return to safe pose — {e}")
 
 
-    #I never actually tested this, proceed with caution
+    #I had a thougt to include a soft-estop but never actually tested this, proceed with caution
     def abort_and_recover(self, safe_pose=(190, 0, 308, 0, 90, 0)):
         print("[Meca500] Aborting and recovering...")
     

@@ -4,7 +4,7 @@ Created on Thu May 22 14:03:24 2025
 
 @author: elija
 """
-# stepper.py
+
 
 import sys
 import time
