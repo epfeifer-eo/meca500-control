@@ -485,3 +485,166 @@ class Meca500:
             self.robot.Disconnect()
             self.connected = False
             print("[Meca500] Disconnected.")
+            
+            
+    def collect(
+        self,
+        pose=(103.5, -62, 245, 90, 59.06, -90),
+        surface_offset_mm=10.0,
+        drill_depth_mm=8.0,
+        speed=1200,
+        cart_vel=2.0,
+        pause_sec=0.5
+    ):
+        """Move to soil collection pose, descend to surface, drill down, return."""
+        print("[Meca500] Starting collection sequence...")
+        x, y, z, alpha, beta, gamma = pose
+    
+        self.set_cart_vel(cart_vel)
+    
+        # Move to collection pose (10mm above soil surface)
+        self.move_pose(x, y, z, alpha, beta, gamma)
+    
+        # Lower to surface
+        self.robot.MoveLinRelWrf(0, 0, -surface_offset_mm, 0, 0, 0)
+        self.robot.WaitIdle()
+    
+        # Start stepper forward
+        if self.stepper:
+            self.stepper.forward(speed)
+    
+        # Drill down slowly
+        self.robot.MoveLinRelWrf(0, 0, -drill_depth_mm, 0, 0, 0)
+        self.robot.WaitIdle()
+    
+        time.sleep(pause_sec)
+    
+        # Raise back to original pose
+        self.robot.MoveLinRelWrf(0, 0, surface_offset_mm + drill_depth_mm, 0, 0, 0)
+        self.robot.WaitIdle()
+    
+        # Stop stepper
+        if self.stepper:
+            self.stepper.stop()
+    
+        print("[Meca500] Collection complete.")
+    
+    
+    def deposit(
+        self,
+        pose,
+        deposit_depth_mm=5.0,
+        speed=800,
+        cart_vel=2.0,
+        pause_sec=1.5
+    ):
+        """Move to well, lower tool, reverse stepper, raise up."""
+        print("[Meca500] Starting deposit sequence...")
+        x, y, z, alpha, beta, gamma = pose
+    
+        self.set_cart_vel(cart_vel)
+    
+        # Move to well pose
+        self.move_pose(x, y, z, alpha, beta, gamma)
+    
+        # Lower to just inside well
+        self.robot.MoveLinRelWrf(0, 0, -deposit_depth_mm, 0, 0, 0)
+        self.robot.WaitIdle()
+    
+        # Start reverse
+        if self.stepper:
+            self.stepper.reverse(speed)
+    
+        time.sleep(pause_sec)
+    
+        # Raise up
+        self.robot.MoveLinRelWrf(0, 0, deposit_depth_mm, 0, 0, 0)
+        self.robot.WaitIdle()
+    
+        # Stop stepper
+        if self.stepper:
+            self.stepper.stop()
+    
+        print("[Meca500] Deposit complete.")
+
+
+    def auger(
+        self,
+        A1: Tuple[float, float],
+        A12: Tuple[float, float],
+        H12: Tuple[float, float],
+        z_height: float = 308,
+        rows: int = 8,
+        cols: int = 12,
+        angles: Tuple[float, float, float] = (0, 90, 0),
+        skip_columns: Optional[str] = None,
+        return_safe_pose: Tuple[float, float, float, float, float, float] = (190, 0, 308, 0, 90, 0),
+        collection_pose: Tuple[float, float, float, float, float, float] = (103.5, -62, 245, 90, 59.06, -90),
+        collect_kwargs: Optional[dict] = None,
+        deposit_kwargs: Optional[dict] = None
+    ):
+        """Perform soil collection + 3-well deposit routine using reference points."""
+        print("[Meca500] Starting auger routine...")
+    
+        if collect_kwargs is None:
+            collect_kwargs = {}
+        if deposit_kwargs is None:
+            deposit_kwargs = {}
+    
+        if not hasattr(self, "_auger_row"):
+            self._auger_row = 0
+            self._auger_col = 0
+    
+        x0, y0 = A1
+        x1, y1 = A12
+        x2, y2 = H12
+        alpha, beta, gamma = angles
+    
+        row_dx = (x1 - x0) / (cols - 1)
+        row_dy = (y1 - y0) / (cols - 1)
+        col_dx = (x2 - x1) / (rows - 1)
+        col_dy = (y2 - y1) / (rows - 1)
+    
+        # Move to safe pose first
+        print("[Meca500] Moving to safe pose before collection")
+        self.move_pose(*return_safe_pose)
+    
+        # Collect material
+        self.collect(pose=collection_pose, **collect_kwargs)
+    
+        deposits_done = 0
+    
+        while deposits_done < 3 and self._auger_row < rows:
+            col_range = range(cols) if self._auger_row % 2 == 0 else range(cols - 1, -1, -1)
+    
+            for c in col_range[self._auger_col:]:
+                # Check skip logic
+                if skip_columns == 'Even' and c % 2 == 1:
+                    continue
+                if skip_columns == 'Odd' and c % 2 == 0:
+                    continue
+    
+                x = x0 + c * row_dx + self._auger_row * col_dx
+                y = y0 + c * row_dy + self._auger_row * col_dy
+    
+                pose = (x, y, z_height, alpha, beta, gamma)
+                print(f"[Meca500] Depositing at ({self._auger_row}, {c}) — {pose}")
+                self.deposit(pose=pose, **deposit_kwargs)
+                deposits_done += 1
+    
+                self._auger_col = c + 1
+                if deposits_done >= 3:
+                    break
+    
+            if self._auger_col >= cols:
+                self._auger_row += 1
+                self._auger_col = 0
+    
+        # Return to safe pose
+        print("[Meca500] Returning to safe pose.")
+        self.move_pose(*return_safe_pose)
+
+    def reset_auger_progress(self):
+        self._auger_row = 0
+        self._auger_col = 0
+        print("[Meca500] Auger progress reset.")
