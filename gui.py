@@ -35,13 +35,14 @@ class RobotWorker(QThread):
         self.A1 = (140.63, -49.80)
         self.A12 = (139.34, 49.34)
         self.H12 = (202.46, 49.77)
-        self.z_height = 218
+        self.z_height = 250
         self.rows = 8
         self.cols = 12
         self.angles = (0, 90, 0)
         self.run_cleaning = False
         self.skip_columns = None
-        self.tap_params = {}  # New
+        self.tap_params = {}  
+        self.mode = "Grid Routine"
 
     def run(self):
         try:
@@ -51,18 +52,60 @@ class RobotWorker(QThread):
 
             self.arm.tap_params = self.tap_params  
 
-            self.arm.grid_from_references(
-                A1=self.A1,
-                A12=self.A12,
-                H12=self.H12,
-                z_height=self.z_height,
-                rows=self.rows,
-                cols=self.cols,
-                angles=self.angles,
-                run_cleaning=self.run_cleaning,
-                skip_columns=self.skip_columns,
-                should_stop=self._stop_event
-            )
+            if self.mode == "Auger Routine":
+                self.message.emit("Running auger routine...")
+                self.arm.auger(
+                    A1=self.A1,
+                    A12=self.A12,
+                    H12=self.H12,
+                    z_height=self.z_height,
+                    rows=self.rows,
+                    cols=self.cols,
+                    angles=self.angles,
+                    skip_columns=self.skip_columns,
+                    collect_kwargs={
+                        "surface_offset_mm": 5,
+                        "drill_depth_mm": 5,
+                        "speed": 1200,
+                        "cart_vel": 2.0,
+                        "pause_sec": 0.5
+                    },
+                    deposit_kwargs={
+                        "deposit_depth_mm": 5,
+                        "speed": 800,
+                        "cart_vel": 2.0,
+                        "pause_sec": 1.5
+                    }
+                )
+            else:
+                self.message.emit("Running grid routine...")
+                self.arm.tap_params = self.tap_params
+                self.arm.grid_from_references(
+                    A1=self.A1,
+                    A12=self.A12,
+                    H12=self.H12,
+                    z_height=self.z_height,
+                    rows=self.rows,
+                    cols=self.cols,
+                    angles=self.angles,
+                    run_cleaning=self.run_cleaning,
+                    skip_columns=self.skip_columns,
+                    should_stop=self._stop_event
+                )
+
+
+            # self.arm.grid_from_references(
+            #     A1=self.A1,
+            #     A12=self.A12,
+            #     H12=self.H12,
+            #     z_height=self.z_height,
+            #     rows=self.rows,
+            #     cols=self.cols,
+            #     angles=self.angles,
+            #     run_cleaning=self.run_cleaning,
+            #     skip_columns=self.skip_columns,
+            #     should_stop=self._stop_event
+            # )
 
         except Exception as e:
             self.message.emit(f"ERROR: {e}")
@@ -88,6 +131,10 @@ class GUI(QWidget):
         # --- Grid Configuration Group ---
         grid_group = QGroupBox("Grid Configuration")
         grid_layout = QFormLayout()
+        self.mode_selector = QComboBox()
+        self.mode_selector.addItems(["Grid Routine", "Auger Routine"])
+        grid_layout.addRow(QLabel("Mode:"), self.mode_selector)
+
 
         self.input_a1_x = QLineEdit("140.63")
         self.input_a1_y = QLineEdit("-49.80")
@@ -166,6 +213,10 @@ class GUI(QWidget):
         self.stop_btn.clicked.connect(self.stop_routine)
         self.stop_btn.setEnabled(False)
         button_row.addWidget(self.stop_btn)
+        
+        self.reset_plate_btn = QPushButton("New Plate")
+        self.reset_plate_btn.clicked.connect(self.reset_plate)
+        button_row.addWidget(self.reset_plate_btn)
 
         self.reset_btn = QPushButton("Reset Error")
         self.reset_btn.clicked.connect(self.reset_error)
@@ -179,6 +230,11 @@ class GUI(QWidget):
         self.layout.addWidget(self.status_display)
 
         self.setLayout(self.layout)
+
+    def reset_plate(self):
+        self.log("Resetting plate position...")
+        self.arm.reset_auger_progress()
+        self.log("Auger plate index reset.")
 
     def log(self, message):
         self.status_display.append(message)
@@ -264,10 +320,12 @@ class GUI(QWidget):
             run_cleaning = self.cleaning_checkbox.isChecked()
             skip_val = self.skip_dropdown.currentText()
             skip_columns = None if skip_val == "None" else skip_val
+            mode = self.mode_selector.currentText()
         except ValueError as e:
             self.log(f"Invalid input: {e}")
             return
-
+        
+        self.worker.mode = mode
         self.worker = RobotWorker(self.arm, self.stepper)
         self.worker.A1 = A1
         self.worker.A12 = A12
