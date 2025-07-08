@@ -334,8 +334,9 @@ class GUI(QWidget):
             self.log(f"Invalid input: {e}")
             return
         
-        self.worker.mode = mode
+        
         self.worker = RobotWorker(self.arm, self.stepper)
+        self.worker.mode = mode
         self.worker.A1 = A1
         self.worker.A12 = A12
         self.worker.H12 = H12
