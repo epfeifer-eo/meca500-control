@@ -22,6 +22,7 @@ from PyQt5.QtCore import QThread, pyqtSignal
 from meca500 import Meca500
 from stepper import Stepper
 
+
 class RobotWorker(QThread):
     finished = pyqtSignal()
     message = pyqtSignal(str)
@@ -32,6 +33,7 @@ class RobotWorker(QThread):
         self.stepper = stepper
         self._stop_event = threading.Event()
 
+        # Routine parameters
         self.A1 = (140.63, -49.80)
         self.A12 = (139.34, 49.34)
         self.H12 = (202.46, 49.77)
@@ -41,16 +43,17 @@ class RobotWorker(QThread):
         self.angles = (0, 90, 0)
         self.run_cleaning = False
         self.skip_columns = None
-        self.tap_params = {}  
+        self.tap_params = {}
         self.mode = "Grid Routine"
+
+        # Auger-specific parameters
+        self.collect_kwargs = {}
+        self.deposit_kwargs = {}
 
     def run(self):
         try:
             self.arm.connect()
             self.arm.activate_and_home()
-            self.message.emit("Running grid routine...")
-
-            self.arm.tap_params = self.tap_params  
 
             if self.mode == "Auger Routine":
                 self.message.emit("Running auger routine...")
@@ -63,19 +66,8 @@ class RobotWorker(QThread):
                     cols=self.cols,
                     angles=self.angles,
                     skip_columns=self.skip_columns,
-                    collect_kwargs={
-                        "surface_offset_mm": 5,
-                        "drill_depth_mm": 5,
-                        "speed": 1200,
-                        "cart_vel": 2.0,
-                        "pause_sec": 0.5
-                    },
-                    deposit_kwargs={
-                        "deposit_depth_mm": 5,
-                        "speed": 800,
-                        "cart_vel": 2.0,
-                        "pause_sec": 1.5
-                    }
+                    collect_kwargs=self.collect_kwargs,
+                    deposit_kwargs=self.deposit_kwargs
                 )
             else:
                 self.message.emit("Running grid routine...")
@@ -93,6 +85,88 @@ class RobotWorker(QThread):
                     should_stop=self._stop_event
                 )
 
+        except Exception as e:
+            self.message.emit(f"ERROR: {e}")
+
+        finally:
+            self.arm.disconnect()
+            self.finished.emit()
+
+    def stop(self):
+        self._stop_event.set()
+
+
+# class RobotWorker(QThread):
+#     finished = pyqtSignal()
+#     message = pyqtSignal(str)
+
+#     def __init__(self, arm, stepper):
+#         super().__init__()
+#         self.arm = arm
+#         self.stepper = stepper
+#         self._stop_event = threading.Event()
+
+#         self.A1 = (140.63, -49.80)
+#         self.A12 = (139.34, 49.34)
+#         self.H12 = (202.46, 49.77)
+#         self.z_height = 250
+#         self.rows = 8
+#         self.cols = 12
+#         self.angles = (0, 90, 0)
+#         self.run_cleaning = False
+#         self.skip_columns = None
+#         self.tap_params = {}  
+#         self.mode = "Grid Routine"
+
+#     def run(self):
+#         try:
+#             self.arm.connect()
+#             self.arm.activate_and_home()
+#             self.message.emit("Running grid routine...")
+
+#             self.arm.tap_params = self.tap_params  
+
+#             if self.mode == "Auger Routine":
+#                 self.message.emit("Running auger routine...")
+#                 self.arm.auger(
+#                     A1=self.A1,
+#                     A12=self.A12,
+#                     H12=self.H12,
+#                     z_height=self.z_height,
+#                     rows=self.rows,
+#                     cols=self.cols,
+#                     angles=self.angles,
+#                     skip_columns=self.skip_columns,
+#                     collect_kwargs={
+#                         "surface_offset_mm": 5,
+#                         "drill_depth_mm": 5,
+#                         "speed": 1200,
+#                         "cart_vel": 2.0,
+#                         "pause_sec": 0.5
+#                     },
+#                     deposit_kwargs={
+#                         "deposit_depth_mm": 5,
+#                         "speed": 800,
+#                         "cart_vel": 2.0,
+#                         "pause_sec": 1.5
+#                     }
+#                 )
+#             else:
+#                 self.message.emit("Running grid routine...")
+#                 self.arm.tap_params = self.tap_params
+#                 self.arm.grid_from_references(
+#                     A1=self.A1,
+#                     A12=self.A12,
+#                     H12=self.H12,
+#                     z_height=self.z_height,
+#                     rows=self.rows,
+#                     cols=self.cols,
+#                     angles=self.angles,
+#                     run_cleaning=self.run_cleaning,
+#                     skip_columns=self.skip_columns,
+#                     should_stop=self._stop_event
+#                 )
+
 
             # self.arm.grid_from_references(
             #     A1=self.A1,
@@ -107,15 +181,15 @@ class RobotWorker(QThread):
             #     should_stop=self._stop_event
             # )
 
-        except Exception as e:
-            self.message.emit(f"ERROR: {e}")
+    #     except Exception as e:
+    #         self.message.emit(f"ERROR: {e}")
 
-        finally:
-            self.arm.disconnect()
-            self.finished.emit()
+    #     finally:
+    #         self.arm.disconnect()
+    #         self.finished.emit()
 
-    def stop(self):
-        self._stop_event.set()
+    # def stop(self):
+    #     self._stop_event.set()
 
 
 class GUI(QWidget):
@@ -185,6 +259,47 @@ class GUI(QWidget):
 
         tap_group.setLayout(tap_layout)
         self.layout.addWidget(tap_group)
+
+        # --- Collect Parameters Group ---
+        collect_group = QGroupBox("Collect Parameters")
+        collect_layout = QFormLayout()
+        
+        self.collect_surface_offset = QLineEdit("10")
+        collect_layout.addRow("Surface Offset (mm):", self.collect_surface_offset)
+        
+        self.collect_drill_depth = QLineEdit("8")
+        collect_layout.addRow("Drill Depth (mm):", self.collect_drill_depth)
+        
+        self.collect_speed = QLineEdit("1200")
+        collect_layout.addRow("Speed (steps/sec):", self.collect_speed)
+        
+        self.collect_cart_vel = QLineEdit("2.0")
+        collect_layout.addRow("Velocity (mm/s):", self.collect_cart_vel)
+        
+        self.collect_pause = QLineEdit("0.5")
+        collect_layout.addRow("Pause (s):", self.collect_pause)
+        
+        collect_group.setLayout(collect_layout)
+        self.layout.addWidget(collect_group)
+        
+        # --- Deposit Parameters Group ---
+        deposit_group = QGroupBox("Deposit Parameters")
+        deposit_layout = QFormLayout()
+        
+        self.deposit_depth = QLineEdit("5")
+        deposit_layout.addRow("Deposit Depth (mm):", self.deposit_depth)
+        
+        self.deposit_speed = QLineEdit("800")
+        deposit_layout.addRow("Speed (steps/sec):", self.deposit_speed)
+        
+        self.deposit_cart_vel = QLineEdit("2.0")
+        deposit_layout.addRow("Velocity (mm/s):", self.deposit_cart_vel)
+        
+        self.deposit_pause = QLineEdit("1.5")
+        deposit_layout.addRow("Pause (s):", self.deposit_pause)
+        
+        deposit_group.setLayout(deposit_layout)
+        self.layout.addWidget(deposit_group)
 
         # --- Preset Controls Row ---
         preset_row = QHBoxLayout()
@@ -320,7 +435,7 @@ class GUI(QWidget):
         self.log(f"Preset '{name}' loaded.")
 
     def start_routine(self):
-        self.log("Starting grid routine...")
+        self.log("Starting routine...")
         try:
             A1 = (float(self.input_a1_x.text()), float(self.input_a1_y.text()))
             A12 = (float(self.input_a12_x.text()), float(self.input_a12_y.text()))
@@ -333,8 +448,7 @@ class GUI(QWidget):
         except ValueError as e:
             self.log(f"Invalid input: {e}")
             return
-        
-        
+    
         self.worker = RobotWorker(self.arm, self.stepper)
         self.worker.mode = mode
         self.worker.A1 = A1
@@ -343,6 +457,7 @@ class GUI(QWidget):
         self.worker.z_height = z_height
         self.worker.run_cleaning = run_cleaning
         self.worker.skip_columns = skip_columns
+    
         self.worker.tap_params = {
             "distance_mm": float(self.tap_distance.text()),
             "pause_sec": float(self.tap_pause.text()),
@@ -350,13 +465,69 @@ class GUI(QWidget):
             "ramp_time": float(self.tap_ramp_time.text()),
             "target_speed": int(self.tap_speed.text())
         }
-
+    
+        self.worker.collect_kwargs = {
+            "surface_offset_mm": float(self.collect_surface_offset.text()),
+            "drill_depth_mm": float(self.collect_drill_depth.text()),
+            "speed": int(self.collect_speed.text()),
+            "cart_vel": float(self.collect_cart_vel.text()),
+            "pause_sec": float(self.collect_pause.text())
+        }
+    
+        self.worker.deposit_kwargs = {
+            "deposit_depth_mm": float(self.deposit_depth.text()),
+            "speed": int(self.deposit_speed.text()),
+            "cart_vel": float(self.deposit_cart_vel.text()),
+            "pause_sec": float(self.deposit_pause.text())
+        }
+    
         self.worker.message.connect(self.log)
         self.worker.finished.connect(self.routine_done)
         self.worker.start()
-
+    
         self.start_btn.setEnabled(False)
         self.stop_btn.setEnabled(True)
+
+
+
+    # def start_routine(self):
+    #     self.log("Starting grid routine...")
+    #     try:
+    #         A1 = (float(self.input_a1_x.text()), float(self.input_a1_y.text()))
+    #         A12 = (float(self.input_a12_x.text()), float(self.input_a12_y.text()))
+    #         H12 = (float(self.input_h12_x.text()), float(self.input_h12_y.text()))
+    #         z_height = float(self.input_z_height.text())
+    #         run_cleaning = self.cleaning_checkbox.isChecked()
+    #         skip_val = self.skip_dropdown.currentText()
+    #         skip_columns = None if skip_val == "None" else skip_val
+    #         mode = self.mode_selector.currentText()
+    #     except ValueError as e:
+    #         self.log(f"Invalid input: {e}")
+    #         return
+        
+        
+    #     self.worker = RobotWorker(self.arm, self.stepper)
+    #     self.worker.mode = mode
+    #     self.worker.A1 = A1
+    #     self.worker.A12 = A12
+    #     self.worker.H12 = H12
+    #     self.worker.z_height = z_height
+    #     self.worker.run_cleaning = run_cleaning
+    #     self.worker.skip_columns = skip_columns
+    #     self.worker.tap_params = {
+    #         "distance_mm": float(self.tap_distance.text()),
+    #         "pause_sec": float(self.tap_pause.text()),
+    #         "cart_vel": float(self.tap_cart_vel.text()),
+    #         "ramp_time": float(self.tap_ramp_time.text()),
+    #         "target_speed": int(self.tap_speed.text())
+    #     }
+
+    #     self.worker.message.connect(self.log)
+    #     self.worker.finished.connect(self.routine_done)
+    #     self.worker.start()
+
+    #     self.start_btn.setEnabled(False)
+    #     self.stop_btn.setEnabled(True)
 
     def stop_routine(self):
         self.log("Stop button pressed.")

@@ -61,13 +61,13 @@ class Stepper:
     
     def forward(self, speed=None):
         """Set direction and start spinning (optionally with initial speed)."""
-        self.dir.on()
+        self.dir.off()
         if speed:
             self.set_speed(speed)
         self._start()
     
     def reverse(self, speed=None):
-        self.dir.off()
+        self.dir.on()
         if speed:
             self.set_speed(speed)
         self._start()
