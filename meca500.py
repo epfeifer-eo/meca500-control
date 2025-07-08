@@ -623,8 +623,14 @@ class Meca500:
     
         print("[Meca500] Deposit complete.")
 
-    def dump(self, pose=(103.5, -62, 245, 90, 59.06, -90), reverse_speed=53000, duration=10.0):
-        """Move to collection pose and reverse stepper for dumping."""
+    def dump(
+        self,
+        pose=(103.5, -62, 245, 90, 59.06, -90),
+        reverse_speed=800,
+        duration=2.0,
+        return_safe_pose=(190, 0, 308, 0, 90, 0)
+    ):
+        """Move to collection pose and reverse stepper to empty tool."""
         print("[Meca500] Dumping contents...")
         x, y, z, alpha, beta, gamma = pose
     
@@ -636,7 +642,12 @@ class Meca500:
             time.sleep(duration)
             self.stepper.stop()
     
-        print("[Meca500] Dump complete. Nice.")
+        print("[Meca500] Returning to safe pose...")
+        self.move_pose(*return_safe_pose)
+        self.move_joints(0, 0, 0, 0, 0, 0)
+    
+        print("[Meca500] Dump complete. Nice")
+
 
 
     def auger(

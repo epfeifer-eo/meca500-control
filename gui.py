@@ -302,6 +302,19 @@ class GUI(QWidget):
         deposit_group.setLayout(deposit_layout)
         self.layout.addWidget(deposit_group)
 
+        # --- Dump Parameters Group ---
+        dump_group = QGroupBox("Dump Parameters")
+        dump_layout = QFormLayout()
+        
+        self.dump_speed = QLineEdit("800")
+        dump_layout.addRow("Reverse Speed (steps/sec):", self.dump_speed)
+        
+        self.dump_duration = QLineEdit("2.0")
+        dump_layout.addRow("Duration (s):", self.dump_duration)
+        
+        dump_group.setLayout(dump_layout)
+        self.layout.addWidget(dump_group)
+
         # --- Preset Controls Row ---
         preset_row = QHBoxLayout()
         self.presets_dropdown = QComboBox()
@@ -660,12 +673,16 @@ class GUI(QWidget):
     def dump_material(self):
         self.log("Performing dump...")
         try:
+            reverse_speed = int(self.dump_speed.text())
+            duration = float(self.dump_duration.text())
+    
             self.arm.connect()
             self.arm.activate_and_home()
-            self.arm.dump()
+            self.arm.dump(reverse_speed=reverse_speed, duration=duration)
             self.log("Dump complete.")
         except Exception as e:
             self.log(f"Dump failed: {e}")
+
 
 
     def reset_error(self):
