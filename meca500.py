@@ -643,6 +643,7 @@ class Meca500:
         # Return to safe pose
         print("[Meca500] Returning to safe pose.")
         self.move_pose(*return_safe_pose)
+        self.move_joints(0, 0, 0, 0, 0, 0)
 
     def reset_auger_progress(self):
         self._auger_row = 0

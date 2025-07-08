@@ -375,12 +375,13 @@ class GUI(QWidget):
         self.presets_dropdown.clear()
         self.presets_dropdown.addItems(self.presets.keys())
 
+
     def save_preset(self):
         name, ok = QInputDialog.getText(self, "Save Preset", "Preset name:")
         if not ok or not name.strip():
             return
         name = name.strip()
-
+    
         preset = {
             "A1": [float(self.input_a1_x.text()), float(self.input_a1_y.text())],
             "A12": [float(self.input_a12_x.text()), float(self.input_a12_y.text())],
@@ -394,24 +395,70 @@ class GUI(QWidget):
                 "cart_vel": float(self.tap_cart_vel.text()),
                 "ramp_time": float(self.tap_ramp_time.text()),
                 "target_speed": int(self.tap_speed.text())
+            },
+            "collect_params": {
+                "surface_offset_mm": float(self.collect_surface_offset.text()),
+                "drill_depth_mm": float(self.collect_drill_depth.text()),
+                "speed": int(self.collect_speed.text()),
+                "cart_vel": float(self.collect_cart_vel.text()),
+                "pause_sec": float(self.collect_pause.text())
+            },
+            "deposit_params": {
+                "deposit_depth_mm": float(self.deposit_depth.text()),
+                "speed": int(self.deposit_speed.text()),
+                "cart_vel": float(self.deposit_cart_vel.text()),
+                "pause_sec": float(self.deposit_pause.text())
             }
         }
+    
         if preset["skip_columns"] == "None":
             preset["skip_columns"] = None
-
+    
         self.presets[name] = preset
         with open(self.presets_file, "w") as f:
             json.dump(self.presets, f, indent=2)
-
+    
         self.load_presets()
         self.log(f"Preset '{name}' saved.")
+
+
+    # def save_preset(self):
+    #     name, ok = QInputDialog.getText(self, "Save Preset", "Preset name:")
+    #     if not ok or not name.strip():
+    #         return
+    #     name = name.strip()
+
+    #     preset = {
+    #         "A1": [float(self.input_a1_x.text()), float(self.input_a1_y.text())],
+    #         "A12": [float(self.input_a12_x.text()), float(self.input_a12_y.text())],
+    #         "H12": [float(self.input_h12_x.text()), float(self.input_h12_y.text())],
+    #         "z_height": float(self.input_z_height.text()),
+    #         "run_cleaning": self.cleaning_checkbox.isChecked(),
+    #         "skip_columns": self.skip_dropdown.currentText(),
+    #         "tap_params": {
+    #             "distance_mm": float(self.tap_distance.text()),
+    #             "pause_sec": float(self.tap_pause.text()),
+    #             "cart_vel": float(self.tap_cart_vel.text()),
+    #             "ramp_time": float(self.tap_ramp_time.text()),
+    #             "target_speed": int(self.tap_speed.text())
+    #         }
+    #     }
+    #     if preset["skip_columns"] == "None":
+    #         preset["skip_columns"] = None
+
+    #     self.presets[name] = preset
+    #     with open(self.presets_file, "w") as f:
+    #         json.dump(self.presets, f, indent=2)
+
+    #     self.load_presets()
+    #     self.log(f"Preset '{name}' saved.")
 
     def load_selected_preset(self):
         name = self.presets_dropdown.currentText()
         if not name or name not in self.presets:
             self.log("No preset selected.")
             return
-
+    
         preset = self.presets[name]
         self.input_a1_x.setText(str(preset["A1"][0]))
         self.input_a1_y.setText(str(preset["A1"][1]))
@@ -421,18 +468,60 @@ class GUI(QWidget):
         self.input_h12_y.setText(str(preset["H12"][1]))
         self.input_z_height.setText(str(preset["z_height"]))
         self.cleaning_checkbox.setChecked(preset["run_cleaning"])
-
+    
         idx = self.skip_dropdown.findText(preset["skip_columns"] or "None")
         self.skip_dropdown.setCurrentIndex(idx)
-
+    
         tap = preset.get("tap_params", {})
         self.tap_distance.setText(str(tap.get("distance_mm", 8)))
         self.tap_pause.setText(str(tap.get("pause_sec", 0.5)))
         self.tap_cart_vel.setText(str(tap.get("cart_vel", 1)))
         self.tap_ramp_time.setText(str(tap.get("ramp_time", 2)))
         self.tap_speed.setText(str(tap.get("target_speed", 1800)))
-
+    
+        collect = preset.get("collect_params", {})
+        self.collect_surface_offset.setText(str(collect.get("surface_offset_mm", 10)))
+        self.collect_drill_depth.setText(str(collect.get("drill_depth_mm", 8)))
+        self.collect_speed.setText(str(collect.get("speed", 1200)))
+        self.collect_cart_vel.setText(str(collect.get("cart_vel", 2.0)))
+        self.collect_pause.setText(str(collect.get("pause_sec", 0.5)))
+    
+        deposit = preset.get("deposit_params", {})
+        self.deposit_depth.setText(str(deposit.get("deposit_depth_mm", 5)))
+        self.deposit_speed.setText(str(deposit.get("speed", 800)))
+        self.deposit_cart_vel.setText(str(deposit.get("cart_vel", 2.0)))
+        self.deposit_pause.setText(str(deposit.get("pause_sec", 1.5)))
+    
         self.log(f"Preset '{name}' loaded.")
+
+
+    # def load_selected_preset(self):
+    #     name = self.presets_dropdown.currentText()
+    #     if not name or name not in self.presets:
+    #         self.log("No preset selected.")
+    #         return
+
+    #     preset = self.presets[name]
+    #     self.input_a1_x.setText(str(preset["A1"][0]))
+    #     self.input_a1_y.setText(str(preset["A1"][1]))
+    #     self.input_a12_x.setText(str(preset["A12"][0]))
+    #     self.input_a12_y.setText(str(preset["A12"][1]))
+    #     self.input_h12_x.setText(str(preset["H12"][0]))
+    #     self.input_h12_y.setText(str(preset["H12"][1]))
+    #     self.input_z_height.setText(str(preset["z_height"]))
+    #     self.cleaning_checkbox.setChecked(preset["run_cleaning"])
+
+    #     idx = self.skip_dropdown.findText(preset["skip_columns"] or "None")
+    #     self.skip_dropdown.setCurrentIndex(idx)
+
+    #     tap = preset.get("tap_params", {})
+    #     self.tap_distance.setText(str(tap.get("distance_mm", 8)))
+    #     self.tap_pause.setText(str(tap.get("pause_sec", 0.5)))
+    #     self.tap_cart_vel.setText(str(tap.get("cart_vel", 1)))
+    #     self.tap_ramp_time.setText(str(tap.get("ramp_time", 2)))
+    #     self.tap_speed.setText(str(tap.get("target_speed", 1800)))
+
+    #     self.log(f"Preset '{name}' loaded.")
 
     def start_routine(self):
         self.log("Starting routine...")
