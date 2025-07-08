@@ -486,7 +486,6 @@ class Meca500:
             self.connected = False
             print("[Meca500] Disconnected.")
             
-            
     def collect(
         self,
         pose=(103.5, -62, 245, 90, 59.06, -90),
@@ -500,43 +499,90 @@ class Meca500:
         print("[Meca500] Starting collection sequence...")
         x, y, z, alpha, beta, gamma = pose
     
+        # Move to approach pose
         self.set_cart_vel(5)
-    
-        # Move to collection pose (10mm above soil surface)
         self.move_pose(x, y, z, alpha, beta, gamma)
     
-        # Lower to surface
+        # Descend to surface at fixed speed
+        self.set_cart_vel(5)
         self.robot.MoveLinRelWrf(0, 0, -surface_offset_mm, 0, 0, 0)
         self.robot.WaitIdle()
     
-        # Start stepper forward
+        # Start auger forward
         if self.stepper:
             self.stepper.forward(speed)
-            
-        self.set_cart_vel(5)
-        
-        # Drill down slowly
+    
+        # Drill at user-defined speed
+        self.set_cart_vel(cart_vel)
         self.robot.MoveLinRelWrf(0, 0, -drill_depth_mm, 0, 0, 0)
         self.robot.WaitIdle()
-        
-        # Stay at bottom during dwell
+    
+        # Pause at bottom
         print(f"[Meca500] Dwell at bottom for {pause_sec} sec")
         time.sleep(pause_sec)
-        
-        # Stop stepper
+    
+        # Stop auger
         if self.stepper:
             self.stepper.stop()
-            
-            
-        self.set_cart_vel(2*cart_vel)
-        
-        # Raise back to original pose
+    
+        # Return upward at fixed speed
+        self.set_cart_vel(5)
         self.robot.MoveLinRelWrf(0, 0, surface_offset_mm + drill_depth_mm, 0, 0, 0)
         self.robot.WaitIdle()
     
+        print("[Meca500] Collection complete.")
+
+            
+    # def collect(
+    #     self,
+    #     pose=(103.5, -62, 245, 90, 59.06, -90),
+    #     surface_offset_mm=10.0,
+    #     drill_depth_mm=8.0,
+    #     speed=1200,
+    #     cart_vel=2.0,
+    #     pause_sec=0.5
+    # ):
+    #     """Move to soil collection pose, descend to surface, drill down, return."""
+    #     print("[Meca500] Starting collection sequence...")
+    #     x, y, z, alpha, beta, gamma = pose
+    
+    #     self.set_cart_vel(5)
+    
+    #     # Move to collection pose (10mm above soil surface)
+    #     self.move_pose(x, y, z, alpha, beta, gamma)
+    
+    #     # Lower to surface
+    #     self.robot.MoveLinRelWrf(0, 0, -surface_offset_mm, 0, 0, 0)
+    #     self.robot.WaitIdle()
+    
+    #     # Start stepper forward
+    #     if self.stepper:
+    #         self.stepper.forward(speed)
+            
+    #     self.set_cart_vel(5)
+        
+    #     # Drill down slowly
+    #     self.robot.MoveLinRelWrf(0, 0, -drill_depth_mm, 0, 0, 0)
+    #     self.robot.WaitIdle()
+        
+    #     # Stay at bottom during dwell
+    #     print(f"[Meca500] Dwell at bottom for {pause_sec} sec")
+    #     time.sleep(pause_sec)
+        
+    #     # Stop stepper
+    #     if self.stepper:
+    #         self.stepper.stop()
+            
+            
+    #     self.set_cart_vel(2*cart_vel)
+        
+    #     # Raise back to original pose
+    #     self.robot.MoveLinRelWrf(0, 0, surface_offset_mm + drill_depth_mm, 0, 0, 0)
+    #     self.robot.WaitIdle()
+    
         
     
-        print("[Meca500] Collection complete.")
+    #     print("[Meca500] Collection complete.")
     
     
     def deposit(
