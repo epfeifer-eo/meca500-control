@@ -15,7 +15,7 @@ import json
 import os
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QPushButton, QVBoxLayout, QTextEdit, QFormLayout,
-    QLineEdit, QCheckBox, QComboBox, QLabel, QInputDialog, QGroupBox, QHBoxLayout
+    QLineEdit, QCheckBox, QComboBox, QLabel, QInputDialog, QGroupBox, QHBoxLayout, QScrollArea
 )
 from PyQt5.QtCore import QThread, pyqtSignal
 
@@ -229,7 +229,16 @@ class GUI(QWidget):
         self.status_display.setReadOnly(True)
         self.layout.addWidget(self.status_display)
 
-        self.setLayout(self.layout)
+        # --- Wrap layout in a scrollable container ---
+        scroll_area = QScrollArea()
+        container = QWidget()
+        container.setLayout(self.layout)
+        scroll_area.setWidget(container)
+        scroll_area.setWidgetResizable(True)
+        
+        main_layout = QVBoxLayout()
+        main_layout.addWidget(scroll_area)
+        self.setLayout(main_layout)
 
     def reset_plate(self):
         self.log("Resetting plate position...")
