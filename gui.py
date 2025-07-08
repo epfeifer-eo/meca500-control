@@ -335,6 +335,10 @@ class GUI(QWidget):
         self.reset_plate_btn.clicked.connect(self.reset_plate)
         button_row.addWidget(self.reset_plate_btn)
 
+        self.dump_btn = QPushButton("Dump")
+        self.dump_btn.clicked.connect(self.dump_material)
+        button_row.addWidget(self.dump_btn)
+
         self.reset_btn = QPushButton("Reset Error")
         self.reset_btn.clicked.connect(self.reset_error)
         button_row.addWidget(self.reset_btn)
@@ -652,6 +656,17 @@ class GUI(QWidget):
                 self.log("Recovery complete.")
             except Exception as e:
                 self.log(f"Recovery failed: {e}")
+
+    def dump_material(self):
+        self.log("Performing dump...")
+        try:
+            self.arm.connect()
+            self.arm.activate_and_home()
+            self.arm.dump()
+            self.log("Dump complete.")
+        except Exception as e:
+            self.log(f"Dump failed: {e}")
+
 
     def reset_error(self):
         self.log("Resetting robot error...")

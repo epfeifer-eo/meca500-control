@@ -623,6 +623,21 @@ class Meca500:
     
         print("[Meca500] Deposit complete.")
 
+    def dump(self, pose=(103.5, -62, 245, 90, 59.06, -90), reverse_speed=2000, duration=2.0):
+        """Move to collection pose and reverse stepper for dumping."""
+        print("[Meca500] Dumping contents...")
+        x, y, z, alpha, beta, gamma = pose
+    
+        self.set_cart_vel(5)
+        self.move_pose(x, y, z, alpha, beta, gamma)
+    
+        if self.stepper:
+            self.stepper.reverse(reverse_speed)
+            time.sleep(duration)
+            self.stepper.stop()
+    
+        print("[Meca500] Dump complete. Nice.")
+
 
     def auger(
         self,
