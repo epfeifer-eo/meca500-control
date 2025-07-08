@@ -516,16 +516,20 @@ class Meca500:
         # Drill down slowly
         self.robot.MoveLinRelWrf(0, 0, -drill_depth_mm, 0, 0, 0)
         self.robot.WaitIdle()
-    
+        
+        # Stay at bottom during dwell
+        print(f"[Meca500] Dwell at bottom for {pause_sec} sec")
         time.sleep(pause_sec)
-    
+        
+        # Stop stepper
+        if self.stepper:
+            self.stepper.stop()
+        
         # Raise back to original pose
         self.robot.MoveLinRelWrf(0, 0, surface_offset_mm + drill_depth_mm, 0, 0, 0)
         self.robot.WaitIdle()
     
-        # Stop stepper
-        if self.stepper:
-            self.stepper.stop()
+        
     
         print("[Meca500] Collection complete.")
     
@@ -554,16 +558,17 @@ class Meca500:
         # Start reverse
         if self.stepper:
             self.stepper.reverse(speed)
-    
+        
+        print(f"[Meca500] Dwell at bottom for {pause_sec} sec")
         time.sleep(pause_sec)
-    
+        
+        # Stop stepper before lifting
+        if self.stepper:
+            self.stepper.stop()
+        
         # Raise up
         self.robot.MoveLinRelWrf(0, 0, deposit_depth_mm, 0, 0, 0)
         self.robot.WaitIdle()
-    
-        # Stop stepper
-        if self.stepper:
-            self.stepper.stop()
     
         print("[Meca500] Deposit complete.")
 
