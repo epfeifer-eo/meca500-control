@@ -207,6 +207,8 @@ class GUI(QWidget):
         grid_layout = QFormLayout()
         self.mode_selector = QComboBox()
         self.mode_selector.addItems(["Grid Routine", "Auger Routine"])
+        self.mode_selector.currentTextChanged.connect(self.update_start_button_label)
+        self.update_start_button_label(self.mode_selector.currentText())
         grid_layout.addRow(QLabel("Mode:"), self.mode_selector)
 
 
@@ -354,6 +356,12 @@ class GUI(QWidget):
         main_layout = QVBoxLayout()
         main_layout.addWidget(scroll_area)
         self.setLayout(main_layout)
+        
+    def update_start_button_label(self, mode):
+        if "Auger" in mode:
+            self.start_btn.setText("Start Auger Routine")
+        else:
+            self.start_btn.setText("Start Grid Routine")
 
     def reset_plate(self):
         self.log("Resetting plate position...")
