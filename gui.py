@@ -208,7 +208,6 @@ class GUI(QWidget):
         self.mode_selector = QComboBox()
         self.mode_selector.addItems(["Grid Routine", "Auger Routine"])
         self.mode_selector.currentTextChanged.connect(self.update_start_button_label)
-        self.update_start_button_label(self.mode_selector.currentText())
         grid_layout.addRow(QLabel("Mode:"), self.mode_selector)
 
 
@@ -323,6 +322,7 @@ class GUI(QWidget):
         button_row = QHBoxLayout()
 
         self.start_btn = QPushButton("Start Grid Routine")
+        self.update_start_button_label(self.mode_selector.currentText())
         self.start_btn.clicked.connect(self.start_routine)
         button_row.addWidget(self.start_btn)
 
@@ -555,6 +555,9 @@ class GUI(QWidget):
         self.worker.run_cleaning = run_cleaning
         self.worker.skip_columns = skip_columns
     
+        self.worker.rows = 8
+        self.worker.cols = 12
+    
         self.worker.tap_params = {
             "distance_mm": float(self.tap_distance.text()),
             "pause_sec": float(self.tap_pause.text()),
@@ -584,6 +587,7 @@ class GUI(QWidget):
     
         self.start_btn.setEnabled(False)
         self.stop_btn.setEnabled(True)
+
 
 
 
