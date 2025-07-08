@@ -623,7 +623,7 @@ class Meca500:
     
         print("[Meca500] Deposit complete.")
 
-    def dump(self, pose=(103.5, -62, 245, 90, 59.06, -90), reverse_speed=2000, duration=2.0):
+    def dump(self, pose=(103.5, -62, 245, 90, 59.06, -90), reverse_speed=53000, duration=10.0):
         """Move to collection pose and reverse stepper for dumping."""
         print("[Meca500] Dumping contents...")
         x, y, z, alpha, beta, gamma = pose
