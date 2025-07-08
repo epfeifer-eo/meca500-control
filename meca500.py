@@ -500,7 +500,7 @@ class Meca500:
         print("[Meca500] Starting collection sequence...")
         x, y, z, alpha, beta, gamma = pose
     
-        self.set_cart_vel(2*cart_vel)
+        self.set_cart_vel(5)
     
         # Move to collection pose (10mm above soil surface)
         self.move_pose(x, y, z, alpha, beta, gamma)
@@ -513,7 +513,7 @@ class Meca500:
         if self.stepper:
             self.stepper.forward(speed)
             
-        self.set_cart_vel(cart_vel)
+        self.set_cart_vel(5)
         
         # Drill down slowly
         self.robot.MoveLinRelWrf(0, 0, -drill_depth_mm, 0, 0, 0)
