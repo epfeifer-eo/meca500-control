@@ -212,68 +212,6 @@ class Meca500:
             if self.stepper:
                 self.stepper.stop()
 
-            
-
-    # OLD tap method
-    # def tap(self,
-    #         distance_mm=8, pause_sec=0.5, cart_vel=5, ramp_time=1.5,
-    #         target_speed=26000, circle_radius=0.5, circle_points=12):
-    #     """Tap while stepper ramps up during descent and ramps down during ascent."""
-    #     try:
-    #         print(f"[Meca500] Setting Cartesian velocity to {cart_vel} mm/s")
-    #         self.robot.SetCartLinVel(cart_vel)
-    
-    #         if self.stepper:
-    #             print("[Meca500] Ramping up while descending")
-    #             self.stepper.reverse(speed=50)
-    #             self.stepper.ramp_to_speed(target_speed, ramp_time, async_mode=True)
-    
-    #         print(f"[Meca500] Moving down {distance_mm} mm")
-    #         self.robot.MoveLinRelWrf(0, 0, -distance_mm, 0, 0, 0)
-    #         self.robot.WaitIdle()
-            
-    #         time.sleep(pause_sec / 2)
-
-    #         print(f"[Meca500] Drawing circle pattern at bottom (radius={circle_radius} mm)")
-    #         import math
-    #         path = []
-    #         for i in range(circle_points):
-    #             angle = 2 * math.pi * i / circle_points
-    #             dx = circle_radius * math.cos(angle)
-    #             dy = circle_radius * math.sin(angle)
-    #             path.append((dx, dy))
-    
-    #         # Draw circle
-    #         for dx, dy in path:
-    #             self.robot.MoveLinRelWrf(dx, dy, 0, 0, 0, 0)
-    
-    #         # Return to center (reverse the path)
-    #         for dx, dy in reversed(path):
-    #             self.robot.MoveLinRelWrf(-dx, -dy, 0, 0, 0, 0)
-    
-    #         time.sleep(pause_sec / 2)
-    
-    #         print(f"[Meca500] Moving back up {distance_mm} mm")
-
-    #         if self.stepper:
-    #             def delayed_ramp_down():
-    #                 time.sleep(0.05)  
-    #                 print("[Meca500] Ramping down while ascending")
-    #                 self.stepper.ramp_to_speed(0, (2 * ramp_time), async_mode=True)
-            
-    #             threading.Thread(target=delayed_ramp_down, daemon=True).start()
-            
-    #         self.robot.MoveLinRelWrf(0, 0, distance_mm, 0, 0, 0)
-    #         self.robot.WaitIdle()
-    
-    #         if self.stepper:
-    #             self.stepper.stop()
-    
-    #     except Exception as e:
-    #         print(f"[Meca500] ERROR: Tap failed — {e}")
-    #         if self.stepper:
-    #             self.stepper.stop()
-
     #This was me learning how to move the arm and so that I could have the arm tell Mike yes or no when he came to my door
     def nod(self, mode="yes"):
         """
@@ -531,59 +469,6 @@ class Meca500:
         self.robot.WaitIdle()
     
         print("[Meca500] Collection complete.")
-
-            
-    # def collect(
-    #     self,
-    #     pose=(103.5, -62, 245, 90, 59.06, -90),
-    #     surface_offset_mm=10.0,
-    #     drill_depth_mm=8.0,
-    #     speed=1200,
-    #     cart_vel=2.0,
-    #     pause_sec=0.5
-    # ):
-    #     """Move to soil collection pose, descend to surface, drill down, return."""
-    #     print("[Meca500] Starting collection sequence...")
-    #     x, y, z, alpha, beta, gamma = pose
-    
-    #     self.set_cart_vel(5)
-    
-    #     # Move to collection pose (10mm above soil surface)
-    #     self.move_pose(x, y, z, alpha, beta, gamma)
-    
-    #     # Lower to surface
-    #     self.robot.MoveLinRelWrf(0, 0, -surface_offset_mm, 0, 0, 0)
-    #     self.robot.WaitIdle()
-    
-    #     # Start stepper forward
-    #     if self.stepper:
-    #         self.stepper.forward(speed)
-            
-    #     self.set_cart_vel(5)
-        
-    #     # Drill down slowly
-    #     self.robot.MoveLinRelWrf(0, 0, -drill_depth_mm, 0, 0, 0)
-    #     self.robot.WaitIdle()
-        
-    #     # Stay at bottom during dwell
-    #     print(f"[Meca500] Dwell at bottom for {pause_sec} sec")
-    #     time.sleep(pause_sec)
-        
-    #     # Stop stepper
-    #     if self.stepper:
-    #         self.stepper.stop()
-            
-            
-    #     self.set_cart_vel(2*cart_vel)
-        
-    #     # Raise back to original pose
-    #     self.robot.MoveLinRelWrf(0, 0, surface_offset_mm + drill_depth_mm, 0, 0, 0)
-    #     self.robot.WaitIdle()
-    
-        
-    
-    #     print("[Meca500] Collection complete.")
-    
     
     def deposit(
         self,
